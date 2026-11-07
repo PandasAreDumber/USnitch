@@ -30,7 +30,6 @@ export default function DetailsStep({ photoUri, location, minutesAgo, note, busy
       <View style={styles.mapFrame} pointerEvents="none">
         <CampusMap selectedLocation={location} />
       </View>
-      <Text style={styles.coordinate}>{location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}</Text>
 
       <Text style={[styles.label, styles.section]}>When did you see it?</Text>
       <View style={styles.chips}>
@@ -77,7 +76,6 @@ const styles = StyleSheet.create({
   photoFrame: { height: 200, borderRadius: 14, overflow: 'hidden', backgroundColor: '#211B20' },
   photo: { width: '100%', height: '100%' },
   mapFrame: { height: 160, borderRadius: 14, overflow: 'hidden' },
-  coordinate: { color: '#D7BEC5', fontSize: 12 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 11, borderRadius: 999, backgroundColor: '#43333A', borderWidth: 1, borderColor: '#5E4750' },
   chipSelected: { backgroundColor: '#AB2528', borderColor: '#E4332D' },
