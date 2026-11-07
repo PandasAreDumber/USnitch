@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from model import train
 
 load_dotenv()
 
@@ -42,3 +43,7 @@ def create_report(report: Report):
 def get_predictions():
     # Placeholder: no predictions yet.
     return []
+
+@app.get("/train")
+def start_training():
+    train()
