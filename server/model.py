@@ -9,14 +9,18 @@ Table (one row per user report of a spotted vehicle):
     Lot_ID     the lot's node_id from data/parking/parking_nodes.csv
     timestamp  start of the 30-minute slot the vehicle was spotted in (timestamptz)
 
-Times are handled in UTC throughout. Only the model's day-of-week and slot-of-day
-inputs are taken from Utah local time, because patrols follow the local clock.
+Times are handled in UTC throughout. Only the model's day-of-week, slot-of-day and
+week-of-month inputs are taken from Utah local time, because patrols follow the local clock.
 
 Training data: one row per lot per 30-minute slot of every date in the data, with
     spottings = 1     if anyone reported a vehicle at that lot in that slot
     spottings = 0.05  otherwise (no report doesn't prove no vehicle)
-and inputs: lot, day of week, 30-minute slot of the day, and which lots had
-spottings in the previous 30-minute slot.
+and inputs:
+    lot, day of week, 30-minute slot of the day, week of the month
+    rate      recent average of spottings for this lot / day of week / slot
+    rate_wom  the same, but only for this week of the month (catches monthly rotations)
+    which lots had spottings in the previous 30-minute slot
+The averages let the model start from the history and learn corrections on top of it.
 """
 import os
 import sys
@@ -38,7 +42,7 @@ MODEL_PATH = str(_model_path if _model_path.is_absolute() else Path(__file__).re
 Path(MODEL_PATH).parent.mkdir(parents=True, exist_ok=True)
 LOTS_FILE = Path(__file__).resolve().parent.parent / "data/parking/parking_nodes.csv"
 TABLE = "ml_training_data"                       # change to your table's name
-TZ = ZoneInfo("America/Denver")           # only used for the day-of-week and slot-of-day inputs
+TZ = ZoneInfo("America/Denver")           # only used for the day/slot/week-of-month inputs
 
 SLOT = "30min"
 SPOTTED, NOT_SPOTTED = 1.0, 0.05
@@ -46,6 +50,11 @@ NOTHING_NEARBY_M = 10_000                 # "distance to nearest spotting" when 
 UNKNOWN_PREV_FRACTION = 0.3               # share of training rows that hide the previous-slot inputs
 HOLDOUT_DAYS = 14                         # most recent days, held back to test the model
 HALF_LIFE_WEEKS = 8                       # data this many weeks old counts half as much as today's
+N_FOLDS = 5                               # training averages come from the other 4/5 of the weeks
+AVERAGE_KEYS = {
+    "rate": ["lot", "dow", "slot"],
+    "rate_wom": ["lot", "dow", "slot", "week_of_month"],
+}
 
 # ---------- 1. Get the data ----------
 
@@ -65,10 +74,12 @@ def to_utc(t):
 
 
 def local_time_inputs(times_utc):
-    """Day of week (0 = Monday) and 30-minute slot of the day (0..47), in Utah local time."""
+    """In Utah local time: day of week (0 = Monday), 30-minute slot of the day (0..47),
+    and week of the month (0 = days 1-7, 1 = 8-14, 2 = 15-21, 3 = 22 to the end)."""    
     local = pd.DatetimeIndex(times_utc).tz_convert(TZ)
-    return local.dayofweek.to_numpy(), (local.hour * 2 + local.minute // 30).to_numpy()
-
+    return (local.dayofweek.to_numpy(),
+            (local.hour * 2 + local.minute // 30).to_numpy(),
+            np.minimum((local.day - 1) // 7, 3).to_numpy())
 
 def load_spottings(engine, start=None, end=None):
     """Spottings with ts in UTC. start/end (UTC) limit the time range."""
@@ -139,12 +150,13 @@ def build_training_data(spottings, lots):
     prev_here[0] = prev_count[0] = prev_nearest[0] = np.nan
 
     n_slots, n_lots = spotted.shape
-    dow, slot_of_day = local_time_inputs(slots)
+    dow, slot_of_day, week_of_month = local_time_inputs(slots)
     data = pd.DataFrame({
         "slot_start": np.repeat(slots, n_lots),                           # UTC
         "lot": np.tile(np.arange(n_lots), n_slots),
         "dow": np.repeat(dow, n_lots),                                    # Utah local
-        "slot": np.repeat(slot_of_day, n_lots),                           # Utah local, 0..47
+        "slot": np.repeat(slot_of_day, n_lots),  
+        "week_of_month": np.repeat(week_of_month, n_lots),                # Utah local, 0..3                         # Utah local, 0..47
         "prev_here": prev_here.ravel(),
         "prev_count": prev_count.ravel(),
         "prev_nearest_m": prev_nearest.ravel(),
@@ -152,8 +164,51 @@ def build_training_data(spottings, lots):
     })
     return data
 
+def recency_weights(slot_start):
+    age_weeks = (slot_start.max() - slot_start).dt.days / 7
+    return (0.5 ** (age_weeks / HALF_LIFE_WEEKS)).to_numpy()
 
-FEATURES = ["lot", "dow", "slot", "prev_here", "prev_count", "prev_nearest_m"]
+
+def average_tables(data):
+    """Recency-weighted average of spottings for each AVERAGE_KEYS group.
+    Saved with the model so predict() can look them up."""
+    w = recency_weights(data.slot_start)
+    df = data[["lot", "dow", "slot", "week_of_month"]].assign(_wy=w * data.spottings.to_numpy(), _w=w)
+    tables = {}
+    for col, keys in AVERAGE_KEYS.items():
+        sums = df.groupby(keys)[["_wy", "_w"]].sum()
+        tables[col] = sums._wy / sums._w
+    return tables
+
+
+def add_averages(data, tables=None):
+    """Add the 'rate' and 'rate_wom' inputs.
+
+    With tables (test rows, predictions): look the averages up.
+    Without (training rows): each row's averages come only from the OTHER weeks
+    (N_FOLDS groups of whole weeks), so the model can't just copy its own answer.
+    """
+    data = data.copy()
+    if tables is not None:
+        for col, keys in AVERAGE_KEYS.items():
+            data[col] = pd.MultiIndex.from_frame(data[keys]).map(tables[col]).to_numpy()
+        return data
+
+    w = recency_weights(data.slot_start)
+    df = data[["lot", "dow", "slot", "week_of_month"]].assign(
+        _wy=w * data.spottings.to_numpy(), _w=w,
+        fold=((data.slot_start - data.slot_start.min()).dt.days // 7) % N_FOLDS)
+    for col, keys in AVERAGE_KEYS.items():
+        by_fold = df.groupby(keys + ["fold"])[["_wy", "_w"]].sum()
+        total = by_fold.groupby(level=keys).sum()
+        other = (total.reindex(pd.MultiIndex.from_frame(df[keys])).to_numpy()
+                 - by_fold.reindex(pd.MultiIndex.from_frame(df[keys + ["fold"]])).to_numpy())
+        has_other = other[:, 1] > 1e-12
+        data[col] = np.where(has_other, other[:, 0] / np.where(has_other, other[:, 1], 1), np.nan)
+    return data
+
+
+FEATURES = ["lot", "dow", "slot", "week_of_month", "rate", "rate_wom", "prev_here", "prev_count", "prev_nearest_m"]
 PREV_FEATURES = ["prev_here", "prev_count", "prev_nearest_m"]
 
 
@@ -169,14 +224,14 @@ def hide_some_previous_inputs(X, seed=0):
 
 
 def fit(data):
+    """data must already have the averages (add_averages)."""
     model = HistGradientBoostingRegressor(
         categorical_features=["lot", "dow"], max_iter=300, learning_rate=0.05,
         max_leaf_nodes=63, random_state=0,
     )
     # recent data counts more, so the model keeps up when the patrol schedule changes
-    age_weeks = (data.slot_start.max() - data.slot_start).dt.days / 7
-    weights = 0.5 ** (age_weeks / HALF_LIFE_WEEKS)
-    model.fit(hide_some_previous_inputs(data[FEATURES]), data.spottings, sample_weight=weights)
+    model.fit(hide_some_previous_inputs(data[FEATURES]), data.spottings,
+              sample_weight=recency_weights(data.slot_start))
     return model
 
 
@@ -189,7 +244,8 @@ def evaluate(data):
         print("Not enough data yet to evaluate.")
         return
 
-    model = fit(train)
+    model = fit(add_averages(train))
+    test = add_averages(test, average_tables(train))
     with_prev = model.predict(test[FEATURES])
     no_prev = model.predict(test[FEATURES].assign(**{c: np.nan for c in PREV_FEATURES}))
     rate = train.groupby(["lot", "dow", "slot"]).spottings.mean()
@@ -212,7 +268,8 @@ def train(crop=False):
     print(f"Training data: {len(data):,} rows ({len(lots)} lots, "
           f"{data.slot_start.nunique():,} slots), {(data.spottings == SPOTTED).sum():,} with spottings")
     evaluate(data)
-    joblib.dump({"model": fit(data)}, MODEL_PATH + ".tmp")
+    bundle = {"model": fit(add_averages(data)), "averages": average_tables(data)}
+    joblib.dump(bundle, MODEL_PATH + ".tmp")
     os.replace(MODEL_PATH + ".tmp", MODEL_PATH)   # swap in the new model in one step
     print(f"Saved model to {MODEL_PATH}")
 
@@ -226,17 +283,21 @@ def predict(time, lot_ids=None):
     If the previous 30-minute slot has already happened, its spottings are read from the
     database and used. For a later time (e.g. next week) the model predicts without them.
     """
-    model = joblib.load(MODEL_PATH)["model"]
+    bundle = joblib.load(MODEL_PATH)
+    if "averages" not in bundle:
+        raise RuntimeError("This model file is from an older version. Run training again.")
+    model = bundle["model"]
     lots = load_lots()
     slot_start = to_utc(time).floor(SLOT)
     prev_start = slot_start - pd.Timedelta(SLOT)
 
-    dow, slot_of_day = local_time_inputs([slot_start])
-    X = pd.DataFrame({
+    dow, slot_of_day, week_of_month = local_time_inputs([slot_start])
+    X = add_averages(pd.DataFrame({
         "lot": np.arange(len(lots)),
         "dow": dow[0],
         "slot": slot_of_day[0],
-    })
+        "week_of_month": week_of_month[0],
+    }), bundle["averages"])
     if slot_start <= pd.Timestamp.now(tz="UTC"):   # previous slot is over: use what was spotted in it
         recent = load_spottings(get_engine(), prev_start.to_pydatetime(), slot_start.to_pydatetime())
         prev_spotted = lots.node_id.isin(recent.lot_id).to_numpy()[None, :]
