@@ -4,8 +4,8 @@ import type { Coordinates } from '../../lib/sightings';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LocateIcon } from './icons';
 
-// Height of the coordinates + "Use my location" stack; the map credits sit above it.
-const CONTROLS_HEIGHT = 100;
+// Height of the "Use my location" row; the map credits sit above it.
+const CONTROLS_HEIGHT = 64;
 
 type Props = {
   location: Coordinates | null;
@@ -33,9 +33,6 @@ export default function LocationStep({ location, locating, error, onLocationSele
 
       <View style={[styles.bottomOverlay, { bottom }]} pointerEvents="box-none">
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-        <Text style={styles.coordinate}>
-          {location ? `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}` : 'Move the pin onto campus'}
-        </Text>
         <Pressable accessibilityRole="button" onPress={onUseMyLocation} disabled={locating} style={locating ? [styles.locate, styles.disabled] : styles.locate}>
           <LocateIcon />
           <Text style={styles.locateText}>{locating ? 'Finding you…' : 'Use my location'}</Text>
@@ -54,7 +51,6 @@ const styles = StyleSheet.create({
   bottomOverlay: { position: 'absolute', left: 20, right: 150, gap: 8, alignItems: 'flex-start' },
   locate: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 52, backgroundColor: '#43333A', borderWidth: 1, borderColor: '#D7A49E', borderRadius: 26, paddingHorizontal: 16 },
   locateText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  coordinate: { color: '#F3E3E0', fontSize: 12, backgroundColor: '#33262CE6', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, overflow: 'hidden' },
   error: { color: '#FFB4AB', fontSize: 14, backgroundColor: '#4B2930F2', borderRadius: 10, padding: 10, overflow: 'hidden' },
   disabled: { opacity: 0.5 },
 });
