@@ -1,13 +1,16 @@
 """Predict where parking enforcement will be spotted, from user spotting reports in SQL.
 
     python model.py train                                  # load spottings, train, save the model
-    python model.py predict 2026-11-10T10:30               # score for every lot
-    python model.py predict 2026-11-10T10:30 utah-surface-002
+    python model.py predict 2026-11-10T17:30Z              # score for every lot
+    python model.py predict 2026-11-10T10:30-07:00 utah-surface-002
 
 Table (one row per user report of a spotted vehicle):
     UID        the user's id
     Lot_ID     the lot's node_id from data/parking/parking_nodes.csv
-    timestamp  when the vehicle was spotted (Utah local time)
+    timestamp  start of the 30-minute slot the vehicle was spotted in (timestamptz)
+
+Times are handled in UTC throughout. Only the model's day-of-week and slot-of-day
+inputs are taken from Utah local time, because patrols follow the local clock.
 
 Training data: one row per lot per 30-minute slot of every date in the data, with
     spottings = 1     if anyone reported a vehicle at that lot in that slot
@@ -34,7 +37,7 @@ load_dotenv()   # reads DATABASE_URL from server/.env
 MODEL_PATH = os.environ.get("MODEL_PATH", "model.joblib")
 LOTS_FILE = Path(__file__).resolve().parent.parent / "data/parking/parking_nodes.csv"
 TABLE = "ml_training_data"                       # change to your table's name
-TZ = ZoneInfo("America/Denver")
+TZ = ZoneInfo("America/Denver")           # only used for the day-of-week and slot-of-day inputs
 
 SLOT = "30min"
 SPOTTED, NOT_SPOTTED = 1.0, 0.05
@@ -54,20 +57,27 @@ def load_lots():
     return pd.read_csv(LOTS_FILE)[["node_id", "name", "latitude", "longitude"]]
 
 
-def to_local(ts):
-    """Timestamps as Utah local time without a time zone attached."""
-    ts = pd.to_datetime(ts)
-    return ts.dt.tz_convert(TZ).dt.tz_localize(None) if ts.dt.tz is not None else ts
+def to_utc(t):
+    """A time as a UTC timestamp. Times without a time zone are taken to be UTC."""
+    t = pd.Timestamp(t)
+    return t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+
+
+def local_time_inputs(times_utc):
+    """Day of week (0 = Monday) and 30-minute slot of the day (0..47), in Utah local time."""
+    local = pd.DatetimeIndex(times_utc).tz_convert(TZ)
+    return local.dayofweek.to_numpy(), (local.hour * 2 + local.minute // 30).to_numpy()
 
 
 def load_spottings(engine, start=None, end=None):
+    """Spottings with ts in UTC. start/end (UTC) limit the time range."""
     query = f'SELECT "UID" AS uid, "Lot_ID" AS lot_id, "timestamp" AS ts FROM {TABLE}'
     params = {}
     if start is not None:
         query += ' WHERE "timestamp" >= :start AND "timestamp" < :end'
         params = {"start": start, "end": end}
     df = pd.read_sql(text(query), engine, params=params)
-    df["ts"] = to_local(df.ts)
+    df["ts"] = pd.to_datetime(df.ts, utc=True)
     return df
 
 
@@ -100,8 +110,7 @@ def previous_slot_inputs(prev_spotted, dist):
 
 
 def build_training_data(spottings, lots):
-    """One row per lot per 30-minute slot of every date from the first to the last spotting."""
-    lot_index = {lot: i for i, lot in enumerate(lots.node_id)}
+    """One row per lot per 30-minute slot (UTC) of every date from the first to the last spotting."""    lot_index = {lot: i for i, lot in enumerate(lots.node_id)}
     unknown = ~spottings.lot_id.isin(lot_index)
     if unknown.any():
         print(f"Skipping {unknown.sum()} spottings with a Lot_ID not in {LOTS_FILE.name}")
@@ -128,11 +137,12 @@ def build_training_data(spottings, lots):
     prev_here[0] = prev_count[0] = prev_nearest[0] = np.nan
 
     n_slots, n_lots = spotted.shape
+    dow, slot_of_day = local_time_inputs(slots)
     data = pd.DataFrame({
-        "slot_start": np.repeat(slots, n_lots),
+        "slot_start": np.repeat(slots, n_lots),                           # UTC
         "lot": np.tile(np.arange(n_lots), n_slots),
-        "dow": np.repeat(slots.dayofweek, n_lots),
-        "slot": np.repeat(slots.hour * 2 + slots.minute // 30, n_lots),   # 0..47
+        "dow": np.repeat(dow, n_lots),                                    # Utah local
+        "slot": np.repeat(slot_of_day, n_lots),                           # Utah local, 0..47
         "prev_here": prev_here.ravel(),
         "prev_count": prev_count.ravel(),
         "prev_nearest_m": prev_nearest.ravel(),
@@ -210,23 +220,22 @@ def train():
 def predict(time, lot_ids=None):
     """{lot_id: score from 0.05 to 1}, highest first. Higher = more likely to be spotted there.
 
+    time: any time zone; a time without one is taken to be UTC.
     If the previous 30-minute slot has already happened, its spottings are read from the
     database and used. For a later time (e.g. next week) the model predicts without them.
     """
     model = joblib.load(MODEL_PATH)["model"]
     lots = load_lots()
-    t = pd.Timestamp(time)
-    t = t.tz_convert(TZ).tz_localize(None) if t.tzinfo else t
-    slot_start = t.floor(SLOT)
+    slot_start = to_utc(time).floor(SLOT)
     prev_start = slot_start - pd.Timedelta(SLOT)
 
+    dow, slot_of_day = local_time_inputs([slot_start])
     X = pd.DataFrame({
         "lot": np.arange(len(lots)),
-        "dow": slot_start.dayofweek,
-        "slot": slot_start.hour * 2 + slot_start.minute // 30,
+        "dow": dow[0],
+        "slot": slot_of_day[0],
     })
-    now = datetime.now(TZ).replace(tzinfo=None)
-    if slot_start <= now:   # previous slot is over: use what was spotted in it
+    if slot_start <= pd.Timestamp.now(tz="UTC"):   # previous slot is over: use what was spotted in it
         recent = load_spottings(get_engine(), prev_start.to_pydatetime(), slot_start.to_pydatetime())
         prev_spotted = lots.node_id.isin(recent.lot_id).to_numpy()[None, :]
         here, count, nearest = previous_slot_inputs(prev_spotted, distance_matrix(lots))
@@ -239,3 +248,13 @@ def predict(time, lot_ids=None):
     if lot_ids:
         result = {l: result[l] for l in lot_ids if l in result}
     return dict(sorted(result.items(), key=lambda x: -x[1]))
+
+
+if __name__ == "__main__":
+    if sys.argv[1:2] == ["train"]:
+        train()
+    elif sys.argv[1:2] == ["predict"] and len(sys.argv) >= 3:
+        for lot, score in predict(sys.argv[2], sys.argv[3:] or None).items():
+            print(f"{lot:24s} {score:.3f}")
+    else:
+        print(__doc__)
