@@ -60,10 +60,10 @@ export default function Campus() {
             <Text style={styles.statusText}>{loading ? 'Loading sightings…' : `${visible.length} sighting${visible.length === 1 ? '' : 's'} · ${slot ? formatSlotRange(slot) : 'past 24h'}`}</Text>
             <Text style={styles.statusHint}>{live ? 'Live' : 'Syncing'}</Text>
           </View>
-          <View style={styles.heatLegend} accessibilityLabel="Lot outline colors: yellow is unlikely enforcement, red is very likely">
+          <View style={styles.heatLegend} accessibilityLabel="Lot outline colors: yellow is unlikely enforcement, red is most likely">
             <Text style={styles.heatLabel}>Enforcement</Text>
             <View style={styles.heatBar}>{HEAT_LEGEND.map(color => <View key={color} style={[styles.heatStep, { backgroundColor: color }]} />)}</View>
-            <View style={styles.heatEnds}><Text style={styles.heatEnd}>Unlikely</Text><Text style={styles.heatEnd}>Very likely</Text></View>
+            <View style={styles.heatEnds}><Text style={styles.heatEnd}>Unlikely</Text><Text style={styles.heatEnd}>Most likely</Text></View>
             {predictions.error && <Pressable accessibilityRole="button" onPress={predictions.refresh}><Text style={styles.heatError}>{predictions.error} Tap to retry.</Text></Pressable>}
           </View>
         </View>
