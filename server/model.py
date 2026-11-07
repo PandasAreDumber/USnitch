@@ -20,7 +20,6 @@ spottings in the previous 30-minute slot.
 """
 import os
 import sys
-from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -110,7 +109,8 @@ def previous_slot_inputs(prev_spotted, dist):
 
 
 def build_training_data(spottings, lots):
-    """One row per lot per 30-minute slot (UTC) of every date from the first to the last spotting."""    lot_index = {lot: i for i, lot in enumerate(lots.node_id)}
+    """One row per lot per 30-minute slot (UTC) of every date from the first to the last spotting."""    
+    lot_index = {lot: i for i, lot in enumerate(lots.node_id)}
     unknown = ~spottings.lot_id.isin(lot_index)
     if unknown.any():
         print(f"Skipping {unknown.sum()} spottings with a Lot_ID not in {LOTS_FILE.name}")
