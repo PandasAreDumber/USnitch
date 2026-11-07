@@ -36,7 +36,7 @@ HALF_LIFE_WEEKS = 12                          # recent data counts more
 # ---------- 1. Get the data from SQL ----------
 
 def load_reports():
-    engine = create_engine(os.environ["postgresql://postgres.hphacaakngsynqtwpcde:gWNNtk_G_v995!R@aws-0-us-east-1.pooler.supabase.com:5432/postgres"])
+    engine = create_engine(os.environ["DATABASE_URL"])
     df = pd.read_sql(REPORTS_QUERY, engine, parse_dates=["reported_at"])
     df["present"] = df.present.astype(bool)
     return df
