@@ -236,13 +236,3 @@ def predict(time, lot_ids=None):
     if lot_ids:
         result = {l: result[l] for l in lot_ids if l in result}
     return dict(sorted(result.items(), key=lambda x: -x[1]))
-
-
-if __name__ == "__main__":
-    if sys.argv[1:2] == ["train"]:
-        train()
-    elif sys.argv[1:2] == ["predict"] and len(sys.argv) >= 3:
-        for lot, score in predict(sys.argv[2], sys.argv[3:] or None).items():
-            print(f"{lot:24s} {score:.3f}")
-    else:
-        print(__doc__)
