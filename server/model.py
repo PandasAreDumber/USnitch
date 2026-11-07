@@ -1,149 +1,248 @@
-"""Predict where parking enforcement will be, from user reports stored in a SQL database.
+"""Predict where parking enforcement will be spotted, from user spotting reports in SQL.
 
-    python model.py train                                  # load reports, train, save the model
-    python model.py predict 2026-11-10T10:30               # chance of a vehicle at every lot
+    python model.py train                                  # load spottings, train, save the model
+    python model.py predict 2026-11-10T10:30               # score for every lot
     python model.py predict 2026-11-10T10:30 utah-surface-002
 
-Expects a table of reports with one row per report:
-    reported_at  timestamp (campus local time)
-    lot_id       the lot's node_id from data/parking/parking_nodes.csv
-    present      true = "enforcement vehicle here", false = "checked, nobody here"
+Table (one row per user report of a spotted vehicle):
+    UID        the user's id
+    Lot_ID     the lot's node_id from data/parking/parking_nodes.csv
+    timestamp  when the vehicle was spotted (Utah local time)
 
-Several vehicles can be out at once, so the model answers, for each lot separately:
-"is ANY enforcement vehicle at this lot at this time?"
+Training data: one row per lot per 30-minute slot of every date in the data, with
+    spottings = 1     if anyone reported a vehicle at that lot in that slot
+    spottings = 0.05  otherwise (no report doesn't prove no vehicle)
+and inputs: lot, day of week, 30-minute slot of the day, and which lots had
+spottings in the previous 30-minute slot.
 """
 import os
 import sys
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingClassifier
-from sklearn.metrics import brier_score_loss, roc_auc_score
-from sqlalchemy import create_engine
+from dotenv import load_dotenv
+from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.metrics import roc_auc_score
+from sqlalchemy import create_engine, text
+
+load_dotenv()   # reads DATABASE_URL from server/.env
 
 MODEL_PATH = os.environ.get("MODEL_PATH", "model.joblib")
-REPORTS_QUERY = "SELECT reported_at, lot_id, present FROM reports"
+LOTS_FILE = Path(__file__).resolve().parent.parent / "data/parking/parking_nodes.csv"
+TABLE = "spottings"                       # change to your table's name
+TZ = ZoneInfo("America/Denver")
 
-ROTATION_EPOCH = pd.Timestamp("2026-01-05")   # a Monday; weeks of the rotation are counted from here
-CYCLE_CANDIDATES = [1, 2, 3, 4, 5, 6]         # schedule repeats every N weeks; 1 = no rotation
-CYCLE_TOLERANCE = 0.005                       # prefer a shorter cycle unless a longer one is clearly better
-BUCKET = "15min"                              # reports at the same lot within 15 minutes count once
-HOLDOUT_DAYS = 14                             # most recent days, held back to test the model
-HALF_LIFE_WEEKS = 12                          # recent data counts more
+SLOT = "30min"
+SPOTTED, NOT_SPOTTED = 1.0, 0.05
+NOTHING_NEARBY_M = 10_000                 # "distance to nearest spotting" when nothing was spotted
+UNKNOWN_PREV_FRACTION = 0.3               # share of training rows that hide the previous-slot inputs
+HOLDOUT_DAYS = 14                         # most recent days, held back to test the model
 
 
-# ---------- 1. Get the data from SQL ----------
+# ---------- 1. Get the data ----------
 
-def load_reports():
-    engine = create_engine(os.environ["DATABASE_URL"])
-    df = pd.read_sql(REPORTS_QUERY, engine, parse_dates=["reported_at"])
-    df["present"] = df.present.astype(bool)
+def get_engine():
+    return create_engine(os.environ["DATABASE_URL"])
+
+
+def load_lots():
+    """All lots, from data/parking. Every lot gets training rows, even with no spottings."""
+    return pd.read_csv(LOTS_FILE)[["node_id", "name", "latitude", "longitude"]]
+
+
+def to_local(ts):
+    """Timestamps as Utah local time without a time zone attached."""
+    ts = pd.to_datetime(ts)
+    return ts.dt.tz_convert(TZ).dt.tz_localize(None) if ts.dt.tz is not None else ts
+
+
+def load_spottings(engine, start=None, end=None):
+    query = f'SELECT "UID" AS uid, "Lot_ID" AS lot_id, "timestamp" AS ts FROM {TABLE}'
+    params = {}
+    if start is not None:
+        query += ' WHERE "timestamp" >= :start AND "timestamp" < :end'
+        params = {"start": start, "end": end}
+    df = pd.read_sql(text(query), engine, params=params)
+    df["ts"] = to_local(df.ts)
     return df
 
 
-def make_examples(reports):
-    """One example per (lot, 15-minute window): present if anyone saw a vehicle there in that window."""
-    reports = reports.assign(bucket=reports.reported_at.dt.floor(BUCKET))
-    ex = reports.groupby(["lot_id", "bucket"], as_index=False).present.max()
-    ex["time"] = ex.bucket + pd.Timedelta(BUCKET) / 2
-    return ex
+# ---------- 2. Build the training data ----------
+
+def distance_matrix(lots):
+    """Meters between every pair of lots."""
+    lat, lon = np.radians(lots.latitude.to_numpy()), np.radians(lots.longitude.to_numpy())
+    dlat, dlon = lat[:, None] - lat[None, :], lon[:, None] - lon[None, :]
+    a = np.sin(dlat / 2) ** 2 + np.cos(lat[:, None]) * np.cos(lat[None, :]) * np.sin(dlon / 2) ** 2
+    return 2 * 6_371_000 * np.arcsin(np.sqrt(a))
 
 
-# ---------- 2. Model inputs ----------
+def previous_slot_inputs(prev_spotted, dist):
+    """Turn "the list of lots spotted in the previous slot" into inputs for every lot.
 
-def features(lot_ids, times, lot_codes, cycle_weeks):
-    times = pd.Series(pd.to_datetime(times)).reset_index(drop=True)
-    hour = times.dt.hour + times.dt.minute / 60
-    dow = times.dt.dayofweek
-    return pd.DataFrame({
-        "lot": pd.Series(lot_ids).map(lot_codes).to_numpy(dtype=float),   # unknown lot -> missing
-        "hour_sin": np.sin(2 * np.pi * hour / 24),                          # 11 PM sits next to midnight
-        "hour_cos": np.cos(2 * np.pi * hour / 24),
-        "dow": dow,
-        "week_hour": dow * 24 + hour,
-        "rotation_week": ((times - ROTATION_EPOCH).dt.days // 7) % cycle_weeks,
+    prev_spotted: (n_slots, n_lots) True where a lot had a spotting in the previous slot.
+    Returns three (n_slots, n_lots) arrays:
+        prev_here       this lot itself was spotted in the previous slot
+        prev_count      how many lots were spotted in the previous slot
+        prev_nearest_m  distance from this lot to the nearest lot spotted in the previous slot
+    """
+    n_slots, n_lots = prev_spotted.shape
+    prev_here = prev_spotted.astype(float)
+    prev_count = np.repeat(prev_spotted.sum(axis=1, keepdims=True), n_lots, axis=1).astype(float)
+    prev_nearest = np.full((n_slots, n_lots), float(NOTHING_NEARBY_M))
+    for i in np.flatnonzero(prev_spotted.any(axis=1)):
+        prev_nearest[i] = dist[:, prev_spotted[i]].min(axis=1)
+    return prev_here, prev_count, prev_nearest
+
+
+def build_training_data(spottings, lots):
+    """One row per lot per 30-minute slot of every date from the first to the last spotting."""
+    lot_index = {lot: i for i, lot in enumerate(lots.node_id)}
+    unknown = ~spottings.lot_id.isin(lot_index)
+    if unknown.any():
+        print(f"Skipping {unknown.sum()} spottings with a Lot_ID not in {LOTS_FILE.name}")
+    spottings = spottings[~unknown]
+
+    slots = pd.date_range(spottings.ts.min().normalize(),
+                          spottings.ts.max().normalize() + pd.Timedelta(days=1),
+                          freq=SLOT, inclusive="left")
+    slot_index = {s: i for i, s in enumerate(slots)}
+
+    # timestamps in the table are already rounded down to the start of their 30-minute slot
+    slot_rows = spottings.ts.map(slot_index)
+    if slot_rows.isna().any():
+        bad = spottings.ts[slot_rows.isna()].iloc[0]
+        raise SystemExit(f"Timestamp {bad} is not on a 30-minute slot start (:00 or :30).")
+
+    # spotted[slot, lot] = True if anyone reported a vehicle at that lot in that slot
+    spotted = np.zeros((len(slots), len(lots)), dtype=bool)
+    spotted[slot_rows.astype(int).to_numpy(), spottings.lot_id.map(lot_index).to_numpy()] = True
+
+    # the list of lots spotted in the previous slot (first slot: unknown)
+    prev_spotted = np.vstack([np.zeros((1, len(lots)), dtype=bool), spotted[:-1]])
+    prev_here, prev_count, prev_nearest = previous_slot_inputs(prev_spotted, distance_matrix(lots))
+    prev_here[0] = prev_count[0] = prev_nearest[0] = np.nan
+
+    n_slots, n_lots = spotted.shape
+    data = pd.DataFrame({
+        "slot_start": np.repeat(slots, n_lots),
+        "lot": np.tile(np.arange(n_lots), n_slots),
+        "dow": np.repeat(slots.dayofweek, n_lots),
+        "slot": np.repeat(slots.hour * 2 + slots.minute // 30, n_lots),   # 0..47
+        "prev_here": prev_here.ravel(),
+        "prev_count": prev_count.ravel(),
+        "prev_nearest_m": prev_nearest.ravel(),
+        "spottings": np.where(spotted, SPOTTED, NOT_SPOTTED).ravel(),
     })
+    return data
 
 
-def fit(ex, lot_codes, cycle_weeks):
-    model = HistGradientBoostingClassifier(
-        categorical_features=["lot", "dow", "rotation_week"],
-        max_iter=600, learning_rate=0.05, max_leaf_nodes=63,
-        l2_regularization=1.0, early_stopping=False, random_state=0,
-    )
-    age_weeks = (ex.time.max() - ex.time).dt.days / 7
-    model.fit(features(ex.lot_id, ex.time, lot_codes, cycle_weeks), ex.present.astype(int),
-              sample_weight=0.5 ** (age_weeks / HALF_LIFE_WEEKS))
-    return model
+FEATURES = ["lot", "dow", "slot", "prev_here", "prev_count", "prev_nearest_m"]
+PREV_FEATURES = ["prev_here", "prev_count", "prev_nearest_m"]
 
 
 # ---------- 3. Train ----------
-# This chooses the best matching cycle
-def choose_cycle(ex, lot_codes):
-    """Train on older data, test on the last HOLDOUT_DAYS for each candidate cycle length,
-    print the results next to a simple baseline, and return the cycle length that predicts best."""
-    cutoff = ex.time.max() - pd.Timedelta(days=HOLDOUT_DAYS)
-    train, test = ex[ex.time < cutoff], ex[ex.time >= cutoff]
-    if train.present.nunique() < 2 or test.present.nunique() < 2:
-        print("Not enough data yet to test cycle lengths; assuming no rotation.")
-        return 1
 
-    # a cycle can only be learned if the training data covers it at least twice
-    train_weeks = (train.time.max() - train.time.min()).days / 7
-    candidates = [c for c in CYCLE_CANDIDATES if c == 1 or train_weeks >= 2 * c]
+def hide_some_previous_inputs(X, seed=0):
+    """Blank the previous-slot inputs on some rows, so the model also learns to predict
+    when they aren't known (e.g. for a time next week)."""
+    X = X.copy()
+    hide = np.random.default_rng(seed).random(len(X)) < UNKNOWN_PREV_FRACTION
+    X.loc[hide, PREV_FEATURES] = np.nan
+    return X
 
-    print(f"Test on last {HOLDOUT_DAYS} days ({len(test)} examples):")
-    scores = {}
-    for c in candidates:
-        p = fit(train, lot_codes, c).predict_proba(features(test.lot_id, test.time, lot_codes, c))[:, 1]
-        scores[c] = brier_score_loss(test.present, p)
-        label = "no rotation" if c == 1 else f"{c}-week cycle"
-        print(f"  {label:14s} AUC {roc_auc_score(test.present, p):.3f}   Brier {scores[c]:.4f}")
 
-    # baseline: how often a vehicle was present at that lot in that hour of the week
-    week_hour = lambda t: t.dt.dayofweek * 24 + t.dt.hour
-    rate = train.groupby([train.lot_id, week_hour(train.time)]).present.mean()
-    base = pd.Series(list(zip(test.lot_id, week_hour(test.time)))).map(rate) \
-             .fillna(train.present.mean()).to_numpy()
-    print(f"  {'baseline':14s} AUC {roc_auc_score(test.present, base):.3f}   "
-          f"Brier {brier_score_loss(test.present, base):.4f}")
+def fit(data):
+    model = HistGradientBoostingRegressor(
+        categorical_features=["lot", "dow"], max_iter=300, learning_rate=0.05,
+        max_leaf_nodes=63, random_state=0,
+    )
+    model.fit(hide_some_previous_inputs(data[FEATURES]), data.spottings)
+    return model
 
-    # shortest cycle that is within CYCLE_TOLERANCE of the best score (guards against picking noise)
-    best = min(scores.values())
-    return min(c for c, s in scores.items() if s <= best * (1 + CYCLE_TOLERANCE))
 
-# This trains the model based on the chosen cycle
+def evaluate(data):
+    """Train on older data, test on the last HOLDOUT_DAYS, and compare with a simple baseline."""
+    cutoff = data.slot_start.max() - pd.Timedelta(days=HOLDOUT_DAYS)
+    train, test = data[data.slot_start < cutoff], data[data.slot_start >= cutoff]
+    was_spotted = test.spottings == SPOTTED
+    if train.empty or was_spotted.nunique() < 2:
+        print("Not enough data yet to evaluate.")
+        return
+
+    model = fit(train)
+    with_prev = model.predict(test[FEATURES])
+    no_prev = model.predict(test[FEATURES].assign(**{c: np.nan for c in PREV_FEATURES}))
+    rate = train.groupby(["lot", "dow", "slot"]).spottings.mean()
+    baseline = pd.MultiIndex.from_frame(test[["lot", "dow", "slot"]]).map(rate) \
+                 .fillna(NOT_SPOTTED).to_numpy()
+
+    print(f"Test on last {HOLDOUT_DAYS} days: {len(test):,} lot-slots, {was_spotted.sum():,} with spottings")
+    print("  AUC (1.0 = perfect ranking, 0.5 = random):")
+    print(f"    model, knowing previous slot's spottings  {roc_auc_score(was_spotted, with_prev):.3f}")
+    print(f"    model, without previous slot             {roc_auc_score(was_spotted, no_prev):.3f}")
+    print(f"    baseline (average for lot/day/slot)      {roc_auc_score(was_spotted, baseline):.3f}")
+
+
 def train():
-    ex = make_examples(load_reports())
-    if ex.present.nunique() < 2:
-        raise SystemExit("Need both 'vehicle here' and 'checked, nobody here' reports to train.")
-    lot_codes = {lot: i for i, lot in enumerate(sorted(ex.lot_id.unique()))}
-    cycle = choose_cycle(ex, lot_codes)
-    print("Chosen:", "no rotation" if cycle == 1 else f"schedule repeats every {cycle} weeks")
-    bundle = {"model": fit(ex, lot_codes, cycle), "lot_codes": lot_codes, "cycle_weeks": cycle}
-    joblib.dump(bundle, MODEL_PATH + ".tmp")
+    lots = load_lots()
+    spottings = load_spottings(get_engine())
+    if spottings.empty:
+        raise SystemExit("No spottings in the database yet.")
+    data = build_training_data(spottings, lots)
+    print(f"Training data: {len(data):,} rows ({len(lots)} lots, "
+          f"{data.slot_start.nunique():,} slots), {(data.spottings == SPOTTED).sum():,} with spottings")
+    evaluate(data)
+    joblib.dump({"model": fit(data)}, MODEL_PATH + ".tmp")
     os.replace(MODEL_PATH + ".tmp", MODEL_PATH)   # swap in the new model in one step
-    print(f"Saved model for {len(lot_codes)} lots to {MODEL_PATH}")
+    print(f"Saved model to {MODEL_PATH}")
 
 
 # ---------- 4. Run the model ----------
-# This returns a dictionary with the lot names as a key, and the likelihood of a vehicle being there as the value 
+
 def predict(time, lot_ids=None):
-    """{lot_id: chance that some enforcement vehicle is there}, most likely first."""
-    bundle = joblib.load(MODEL_PATH)
-    lot_codes = bundle["lot_codes"]
-    lot_ids = [l for l in (lot_ids or lot_codes) if l in lot_codes]
-    probs = bundle["model"].predict_proba(
-        features(lot_ids, [pd.Timestamp(time)] * len(lot_ids), lot_codes, bundle["cycle_weeks"]))[:, 1]
-    return dict(sorted(zip(lot_ids, probs.round(4).tolist()), key=lambda x: -x[1]))
+    """{lot_id: score from 0.05 to 1}, highest first. Higher = more likely to be spotted there.
+
+    If the previous 30-minute slot has already happened, its spottings are read from the
+    database and used. For a later time (e.g. next week) the model predicts without them.
+    """
+    model = joblib.load(MODEL_PATH)["model"]
+    lots = load_lots()
+    t = pd.Timestamp(time)
+    t = t.tz_convert(TZ).tz_localize(None) if t.tzinfo else t
+    slot_start = t.floor(SLOT)
+    prev_start = slot_start - pd.Timedelta(SLOT)
+
+    X = pd.DataFrame({
+        "lot": np.arange(len(lots)),
+        "dow": slot_start.dayofweek,
+        "slot": slot_start.hour * 2 + slot_start.minute // 30,
+    })
+    now = datetime.now(TZ).replace(tzinfo=None)
+    if slot_start <= now:   # previous slot is over: use what was spotted in it
+        recent = load_spottings(get_engine(), prev_start.to_pydatetime(), slot_start.to_pydatetime())
+        prev_spotted = lots.node_id.isin(recent.lot_id).to_numpy()[None, :]
+        here, count, nearest = previous_slot_inputs(prev_spotted, distance_matrix(lots))
+        X["prev_here"], X["prev_count"], X["prev_nearest_m"] = here[0], count[0], nearest[0]
+    else:
+        X[PREV_FEATURES] = np.nan
+
+    scores = np.clip(model.predict(X[FEATURES]), NOT_SPOTTED, SPOTTED)
+    result = dict(zip(lots.node_id, scores.round(4).tolist()))
+    if lot_ids:
+        result = {l: result[l] for l in lot_ids if l in result}
+    return dict(sorted(result.items(), key=lambda x: -x[1]))
 
 
 if __name__ == "__main__":
     if sys.argv[1:2] == ["train"]:
         train()
     elif sys.argv[1:2] == ["predict"] and len(sys.argv) >= 3:
-        for lot, p in predict(sys.argv[2], sys.argv[3:] or None).items():
-            print(f"{lot:24s} {p:.1%}")
+        for lot, score in predict(sys.argv[2], sys.argv[3:] or None).items():
+            print(f"{lot:24s} {score:.3f}")
     else:
         print(__doc__)
