@@ -87,27 +87,27 @@ function CampusScreen({ userId }: { userId: string }) {
         }} />
         {!mapReady && <View pointerEvents="none" style={styles.mapLoading}><ActivityIndicator color="#FB503F" /><Text style={styles.muted}>Loading campus map…</Text></View>}
         <View pointerEvents="box-none" style={styles.topOverlay}>
-          <View style={styles.status}>
-            <View style={[styles.liveDot, !live && styles.offlineDot]} />
-            <Text style={styles.statusText}>{loading ? 'Loading sightings…' : `${visible.length} sighting${visible.length === 1 ? '' : 's'} · ${slot ? formatSlotRange(slot) : 'past 24h'}`}</Text>
-            <Text style={styles.statusHint}>{live ? 'Live' : 'Syncing'}</Text>
-          </View>
-          <View style={styles.mapTools} pointerEvents="box-none">
-            <View style={styles.heatLegend} accessibilityLabel="Lot outline colors: yellow is unlikely enforcement, red is very likely">
+          <View style={styles.mapInfo} pointerEvents="box-none">
+            <View style={styles.status}>
+              <View style={[styles.liveDot, !live && styles.offlineDot]} />
+              <Text style={styles.statusText}>{loading ? 'Loading sightings…' : `${visible.length} sighting${visible.length === 1 ? '' : 's'} · ${slot ? formatSlotRange(slot) : 'past 24h'}`}</Text>
+              <Text style={styles.statusHint}>{live ? 'Live' : 'Syncing'}</Text>
+            </View>
+            <View style={styles.heatLegend} accessibilityLabel="Lot outline colors: yellow is unlikely enforcement, red is most likely">
               <Text style={styles.heatLabel}>Enforcement</Text>
               <View style={styles.heatBar}>{HEAT_LEGEND.map(color => <View key={color} style={[styles.heatStep, { backgroundColor: color }]} />)}</View>
-              <View style={styles.heatEnds}><Text style={styles.heatEnd}>Unlikely</Text><Text style={styles.heatEnd}>Very likely</Text></View>
+              <View style={styles.heatEnds}><Text style={styles.heatEnd}>Unlikely</Text><Text style={styles.heatEnd}>Most likely</Text></View>
               {predictions.error && <Pressable accessibilityRole="button" onPress={predictions.refresh}><Text style={styles.heatError}>{predictions.error} Tap to retry.</Text></Pressable>}
             </View>
-            <View style={styles.locationOverlay} pointerEvents="box-none">
-              <Pressable accessibilityRole="button" accessibilityLabel="Show my current location" disabled={userLocation.loading} style={styles.locateButton} onPress={() => {
-                if (userLocation.location && !outsideCampus) setLocationFocusRequest(value => value + 1);
-                else userLocation.retry();
-              }}>
-                <View style={styles.userDot} /><Text style={styles.locateText}>{userLocation.loading ? 'Finding you…' : userLocation.error ? 'Enable location' : 'My location'}</Text>
-              </Pressable>
-              {locationNotice && <Text accessibilityRole="alert" style={styles.locationNotice}>{locationNotice}</Text>}
-            </View>
+          </View>
+          <View style={styles.locationOverlay} pointerEvents="box-none">
+            <Pressable accessibilityRole="button" accessibilityLabel="Show my current location" disabled={userLocation.loading} style={styles.locateButton} onPress={() => {
+              if (userLocation.location && !outsideCampus) setLocationFocusRequest(value => value + 1);
+              else userLocation.retry();
+            }}>
+              <View style={styles.userDot} /><Text style={styles.locateText}>{userLocation.loading ? 'Finding you…' : userLocation.error ? 'Enable location' : 'My location'}</Text>
+            </Pressable>
+            {locationNotice && <Text accessibilityRole="alert" style={styles.locationNotice}>{locationNotice}</Text>}
           </View>
         </View>
         <View style={[styles.bottomOverlay, { bottom: sheet.hump + 12 }]} pointerEvents="box-none">
@@ -139,8 +139,8 @@ function CampusScreen({ userId }: { userId: string }) {
 const HEAT_LEGEND = ['rgb(255,230,80)', 'rgb(255,185,55)', 'rgb(255,140,30)', 'rgb(243,85,30)', 'rgb(230,30,30)'];
 
 const styles = StyleSheet.create({
-  mapTools: { marginTop: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: 12 },
-  locationOverlay: { flex: 1, alignItems: 'flex-end', gap: 8, maxWidth: 190 },
+  mapInfo: { flex: 1, minWidth: 144, alignItems: 'flex-start', gap: 8 },
+  locationOverlay: { width: 132, alignItems: 'flex-end', gap: 8 },
   locateButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#33262CF2', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
   userDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#2684FF', borderWidth: 2, borderColor: '#fff' },
   locateText: { color: '#fff', fontSize: 13, fontWeight: '600', flexShrink: 1 },
@@ -153,9 +153,9 @@ const styles = StyleSheet.create({
   heatEnd: { color: '#D7A49E', fontSize: 10 },
   heatError: { color: '#FFB4AB', fontSize: 11 },
   screen: { flex: 1, backgroundColor: '#43333A' }, map: { flex: 1, position: 'relative' }, mapLoading: { position: 'absolute', top: '45%', alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, borderRadius: 12, backgroundColor: '#33262C' },
-  muted: { color: '#D7BEC5', fontSize: 13 }, topOverlay: { position: 'absolute', top: 16, left: 16, right: 16, alignItems: 'flex-start' },
+  muted: { color: '#D7BEC5', fontSize: 13 }, topOverlay: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   status: { backgroundColor: '#33262CF2', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  liveDot: { backgroundColor: '#91D8A1', width: 7, height: 7, borderRadius: 4 }, offlineDot: { backgroundColor: '#D7A49E' }, statusText: { color: '#fff', fontSize: 13, fontWeight: '600' }, statusHint: { color: '#D7A49E', fontSize: 11 },
+  liveDot: { backgroundColor: '#91D8A1', width: 7, height: 7, borderRadius: 4 }, offlineDot: { backgroundColor: '#D7A49E' }, statusText: { color: '#fff', fontSize: 13, fontWeight: '600', flexShrink: 1 }, statusHint: { color: '#D7A49E', fontSize: 11 },
   bottomOverlay: { position: 'absolute', left: 16, right: 16, alignItems: 'center', gap: 10 },
   legend: { backgroundColor: '#33262CF2', padding: 12, borderRadius: 10, flexDirection: 'row', gap: 10, alignItems: 'center' }, sightingDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFD46B', borderWidth: 2, borderColor: '#fff' }, legendText: { color: '#F3E3E0', fontSize: 12, flexShrink: 1 },
   success: { backgroundColor: '#294A37', padding: 14, borderRadius: 10, maxWidth: 500, gap: 6 }, successText: { color: '#E3F5E8', fontSize: 14 },
