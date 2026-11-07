@@ -6,7 +6,7 @@ import { getMapState, handleMapMessage, type CampusMapProps } from '../map/types
 // react-native-webview has no web support, so on web the same Leaflet page
 // is rendered in an iframe.
 export default function CampusMap(props: CampusMapProps) {
-  const html = useMemo(() => buildLeafletHtml(), []);
+  const html = useMemo(() => buildLeafletHtml(props.bottomInset), [props.bottomInset]);
   const frame = useRef<HTMLIFrameElement>(null);
   const latest = useRef(props);
   useEffect(() => { latest.current = props; }, [props]);
