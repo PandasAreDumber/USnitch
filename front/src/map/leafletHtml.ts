@@ -41,7 +41,7 @@ const CARTO_LAYER = `L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}
 
 export const MAP_READY_MESSAGE = 'map-ready';
 
-export function buildLeafletHtml() {
+export function buildLeafletHtml(bottomInset = 0) {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -54,16 +54,28 @@ export function buildLeafletHtml() {
     .leaflet-control-attribution { background: rgba(67, 51, 58, 0.8) !important; color: #D7A49E; }
     .leaflet-control-attribution a { color: #FB503F; }
     .leaflet-container .leaflet-control-attribution { font-size: 9px; line-height: 1.4; padding: 0 4px; }
+    .leaflet-bottom { bottom: ${Number(bottomInset) || 0}px; }
     .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #43333A; color: #F3E3E0; }
     .leaflet-popup-content { margin: 10px 14px; font: 13px/1.4 system-ui, sans-serif; }
     .lot-name { font-weight: 700; color: #FFFFFF; }
     .lot-meta { color: #D7A49E; }
     .sighting-dot { background: #FFD46B; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 5px rgba(255,212,107,.2), 0 2px 12px #0009; }
     .selection-dot { background: #FB503F; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 6px #FB503F44; }
+    /* Fixed pin for picking a location: the map moves underneath it, and its tip
+       marks the map's center. Hidden unless the map is in picking mode. */
+    #center-pin { display: none; position: absolute; left: 50%; top: 50%; z-index: 1000; pointer-events: none; }
+    body.picking #center-pin { display: block; }
+    #center-pin svg { position: absolute; left: -18px; top: -44px; width: 36px; height: 44px; transition: transform .15s ease-out; filter: drop-shadow(0 3px 4px #0008); }
+    #center-pin.moving svg { transform: translateY(-8px); }
+    #center-pin .pin-shadow { position: absolute; left: -5px; top: -3px; width: 10px; height: 6px; border-radius: 50%; background: #0007; }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div id="center-pin" aria-hidden="true">
+    <div class="pin-shadow"></div>
+    <svg viewBox="0 0 36 44"><path d="M18 43C18 43 33 27.5 33 17A15 15 0 0 0 3 17C3 27.5 18 43 18 43Z" fill="#E4332D" stroke="#fff" stroke-width="2.5"/><circle cx="18" cy="17" r="5.5" fill="#fff"/></svg>
+  </div>
   <script>
     function postMessage(message) {
       if (window.ReactNativeWebView) {
@@ -126,17 +138,28 @@ export function buildLeafletHtml() {
     var sightingsLayer = L.layerGroup().addTo(map);
     var markers = {};
     var selection;
+    var centerPin = document.getElementById('center-pin');
+
+    // In picking mode the picked location is always the map's center.
+    function postCenter() {
+      var center = map.getCenter();
+      postMessage({type:'location-selected',latitude:center.lat,longitude:center.lng});
+    }
+
     window.USnitchMap = {
       update: function (state) {
         if (!state || state.type !== 'usnitch-state') return;
         var nextSelecting = Boolean(state.pickingLocation);
         if (nextSelecting !== selecting) {
           selecting = nextSelecting;
+          document.body.classList.toggle('picking', selecting);
           lots.eachLayer(function (layer) {
             if (selecting) layer.unbindPopup();
             else layer.bindPopup(layer.lotPopup);
           });
           map.closePopup();
+          // Start with the pin's current spot picked, so it matches what's shown.
+          if (selecting && !state.selectedLocation) postCenter();
         }
         var ids = {};
         (state.sightings || []).slice().sort(function (a, b) {
@@ -156,9 +179,15 @@ export function buildLeafletHtml() {
         Object.keys(markers).forEach(function (id) {
           if (!ids[id]) { sightingsLayer.removeLayer(markers[id]); delete markers[id]; }
         });
-        if (state.selectedLocation) {
+        if (state.selectedLocation && selecting) {
+          // The center pin shows the location; move the map only when the location
+          // came from somewhere else (e.g. "Use my location"), not from a drag.
+          if (selection) { map.removeLayer(selection); selection = null; }
+          var target = L.latLng(state.selectedLocation.latitude, state.selectedLocation.longitude);
+          if (map.getCenter().distanceTo(target) > 1) map.setView(target, Math.max(map.getZoom(), 17), {animate:false});
+        } else if (state.selectedLocation) {
           var point = [state.selectedLocation.latitude,state.selectedLocation.longitude];
-          if (!selection || !selection.getLatLng().equals(point)) map.panTo(point, {animate:false});
+          if (!selection || !selection.getLatLng().equals(point)) map.setView(point, Math.max(map.getZoom(), 17), {animate:false});
           if (!selection) {
             selection = L.marker(point,{icon:L.divIcon({className:'selection-dot',iconSize:[20,20],iconAnchor:[10,10]})}).addTo(map);
           } else selection.setLatLng(point);
@@ -168,8 +197,12 @@ export function buildLeafletHtml() {
     window.addEventListener('message', function (event) {
       if (event.source === window.parent) window.USnitchMap.update(event.data);
     });
-    map.on('click', function (event) {
-      if (selecting) postMessage({type:'location-selected',latitude:event.latlng.lat,longitude:event.latlng.lng});
+    map.on('movestart', function () {
+      if (selecting) centerPin.classList.add('moving');
+    });
+    map.on('moveend', function () {
+      centerPin.classList.remove('moving');
+      if (selecting) postCenter();
     });
     // The bridge is ready independently of the tile network.
     setTimeout(notifyReady, 600);

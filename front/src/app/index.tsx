@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { supabase } from '../lib/supabase';
 import { useSightings } from '../hooks/useSightings';
@@ -9,6 +8,7 @@ import type { Sighting } from '../lib/sightings';
 import CampusMap from '../components/CampusMap';
 import Header from '../components/Header';
 import LoadingScreen from '../components/LoadingScreen';
+import ReportFooter, { REPORT_FOOTER_OVERLAP } from '../components/ReportFooter';
 import ReportSighting from '../components/ReportSighting';
 import SightingPhoto from '../components/SightingPhoto';
 
@@ -36,7 +36,7 @@ export default function Campus() {
     <View style={styles.screen}>
       <Header onSignOut={() => { void signOut(); }} signingOut={signingOut} />
       <View style={styles.map}>
-        <CampusMap sightings={sightings} onReady={() => setMapReady(true)} onSightingSelected={id => {
+        <CampusMap sightings={sightings} bottomInset={REPORT_FOOTER_OVERLAP} onReady={() => setMapReady(true)} onSightingSelected={id => {
           const sighting = sightings.find(item => item.id === id);
           if (sighting) setSelected(sighting);
         }} />
@@ -54,12 +54,7 @@ export default function Campus() {
           <View style={styles.legend}><View style={styles.sightingDot} /><Text style={styles.legendText}>{sightings.length ? 'Tap a yellow dot to see the photo' : 'No sightings yet. Be the first to share one.'}</Text></View>
         </View>
       </View>
-      <SafeAreaView edges={['bottom']} style={styles.footer}>
-        <View style={styles.footerRow}>
-          <View style={styles.account}><Text style={styles.accountLabel}>SIGNED IN AS</Text><Text numberOfLines={1} style={styles.email}>{session.user.email}</Text></View>
-          <Pressable accessibilityRole="button" onPress={() => { setReporting(true); setPublished(false); }} style={styles.report}><Text style={styles.reportText}>+ Report sighting</Text></Pressable>
-        </View>
-      </SafeAreaView>
+      <ReportFooter onReport={() => { setReporting(true); setPublished(false); }} />
       {reporting && <ReportSighting userId={session.user.id} onClose={() => setReporting(false)} onPublished={() => { setReporting(false); setPublished(true); void refresh(); }} />}
       {selected && <SightingPhoto sighting={selected} onClose={() => setSelected(null)} />}
     </View>
@@ -71,10 +66,8 @@ const styles = StyleSheet.create({
   muted: { color: '#D7BEC5', fontSize: 13 }, topOverlay: { position: 'absolute', top: 16, left: 16, right: 16, alignItems: 'flex-start' },
   status: { backgroundColor: '#33262CF2', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
   liveDot: { backgroundColor: '#91D8A1', width: 7, height: 7, borderRadius: 4 }, offlineDot: { backgroundColor: '#D7A49E' }, statusText: { color: '#fff', fontSize: 13, fontWeight: '600' }, statusHint: { color: '#D7A49E', fontSize: 11 },
-  bottomOverlay: { position: 'absolute', bottom: 28, left: 16, right: 16, alignItems: 'center', gap: 10 },
+  bottomOverlay: { position: 'absolute', bottom: REPORT_FOOTER_OVERLAP + 16, left: 16, right: 16, alignItems: 'center', gap: 10 },
   legend: { backgroundColor: '#33262CF2', padding: 12, borderRadius: 10, flexDirection: 'row', gap: 10, alignItems: 'center' }, sightingDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFD46B', borderWidth: 2, borderColor: '#fff' }, legendText: { color: '#F3E3E0', fontSize: 12, flexShrink: 1 },
-  footer: { backgroundColor: '#33262C' }, footerRow: { flexDirection: 'row', padding: 16, alignItems: 'center', justifyContent: 'space-between', gap: 12 }, account: { flex: 1 }, accountLabel: { color: '#BCA3AA', fontSize: 10, letterSpacing: 1 }, email: { color: '#F3E3E0', fontSize: 12, marginTop: 5 },
-  report: { paddingVertical: 15, paddingHorizontal: 18, backgroundColor: '#E4332D', borderRadius: 12 }, reportText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   success: { backgroundColor: '#294A37', padding: 14, borderRadius: 10, maxWidth: 500, gap: 6 }, successText: { color: '#E3F5E8', fontSize: 14 },
   error: { backgroundColor: '#4B2930', padding: 14, borderRadius: 10, maxWidth: 500, flexDirection: 'row', alignItems: 'center', gap: 8 }, errorText: { color: '#FFB4AB', flexShrink: 1 }, retry: { padding: 10 }, retryText: { color: '#fff', fontWeight: '600' },
 });

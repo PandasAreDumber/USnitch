@@ -4,7 +4,7 @@ import { buildLeafletHtml } from '../map/leafletHtml';
 import { getMapState, handleMapMessage, type CampusMapProps } from '../map/types';
 
 export default function CampusMap(props: CampusMapProps) {
-  const html = useMemo(() => buildLeafletHtml(), []);
+  const html = useMemo(() => buildLeafletHtml(props.bottomInset), [props.bottomInset]);
   const webview = useRef<WebView<object>>(null);
   const [ready, setReady] = useState(false);
   const updateScript = `window.USnitchMap && window.USnitchMap.update(${JSON.stringify(getMapState(props)).replace(/</g, '\\u003c')}); true;`;

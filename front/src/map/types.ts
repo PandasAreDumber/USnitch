@@ -8,6 +8,8 @@ export type CampusMapProps = {
   selectedLocation?: Coordinates | null;
   onLocationSelected?: (location: Coordinates) => void;
   onSightingSelected?: (id: string) => void;
+  // Space (px) covered by UI along the map's bottom edge; the map credits sit above it.
+  bottomInset?: number;
 };
 
 export function getMapState(props: CampusMapProps) {
