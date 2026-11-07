@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>University of Utah parking nodes</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #182333; background: #f6f7f9; font: 15px system-ui, sans-serif; }
+    header { padding: 22px 24px 14px; background: white; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p { margin: 6px 0; line-height: 1.5; }
+    .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 14px; }
+    select, input { padding: 9px; font: inherit; }
+    #map { height: 65vh; min-height: 420px; }
+    #detail { min-height: 62px; padding: 12px 24px; background: white; }
+    .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #b51633; margin-right: 5px; }
+    .garage { background: #2467bd; }
+    #directory { padding: 16px 24px; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e1e5eb; }
+    button { font: inherit; padding: 6px 10px; cursor: pointer; }
+    #status { color: #4c596c; }
+    .scroll { overflow-x: auto; }
+    a { color: #175498; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>University of Utah · Parking nodes</h1>
+    <p id="summary"></p>
+    <p id="status">Loading basemap… The lot directory below is available offline.</p>
+    <div class="controls">
+      <label>Area <select id="scope"><option value="campus">Campus, medical campus &amp; Research Park</option><option value="all">All source locations, including satellites</option></select></label>
+      <label>Find a lot <input id="search" type="search" placeholder="Lot number or name"></label>
+      <span><span class="dot"></span>Surface lot</span>
+      <span><span class="dot garage"></span>Garage</span>
+    </div>
+  </header>
+  <main>
+    <div id="map" aria-label="Map of parking facility boundaries and one node per facility"></div>
+    <div id="detail" aria-live="polite">Select a node or a lot in the directory to inspect it.</div>
+    <div id="directory"><div class="scroll"><table>
+      <thead><tr><th>Lot</th><th>Name</th><th>Type</th><th>Node ID</th><th>Location</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div></div>
+  </main>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const nodes = __PARKING_NODES__;
+    const boundaries = __PARKING_BOUNDARIES__;
+    const scope = document.getElementById('scope');
+    const search = document.getElementById('search');
+    const detail = document.getElementById('detail');
+    const escapeText = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    let map, group;
+    if (window.L) {
+      map = L.map('map');
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 20, attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+      group = L.featureGroup().addTo(map);
+      document.getElementById('status').textContent = 'Official GIS snapshot · Nov 6, 2026 · Boundaries and interior representative nodes; no predictions shown.';
+    } else {
+      document.getElementById('map').style.display = 'none';
+      document.getElementById('status').textContent = 'Map library unavailable. The complete searchable directory and coordinates remain available below.';
+    }
+    function inspect(feature) {
+      const p = feature.properties;
+      detail.textContent = `Lot ${p.lot_number} · ${p.name} · ${p.node_id} · ${p.latitude.toFixed(6)}, ${p.longitude.toFixed(6)} · Source control: ${p.control.join(', ')} · ${p.source_feature_count} source record(s)`;
+      if (map) map.setView([p.latitude, p.longitude], 18);
+    }
+    function render() {
+      const query = search.value.toLowerCase().trim();
+      const visible = nodes.filter(f => (scope.value === 'all' || f.properties.scope === 'campus') &&
+        `${f.properties.lot_number} ${f.properties.name} ${f.id}`.toLowerCase().includes(query));
+      const ids = new Set(visible.map(f => f.id));
+      const campusCount = nodes.filter(f => f.properties.scope === 'campus').length;
+      document.getElementById('summary').textContent = `${visible.length} facilities shown · ${campusCount} campus nodes · ${nodes.length} including satellites · one node per lot or garage`;
+      document.getElementById('rows').innerHTML = visible.map(f => {
+        const p = f.properties;
+        const mapUrl = `https://www.openstreetmap.org/?mlat=${p.latitude}&mlon=${p.longitude}#map=18/${p.latitude}/${p.longitude}`;
+        return `<tr><td><button type="button" data-id="${escapeText(f.id)}">${p.lot_number}</button></td><td>${escapeText(p.name)}</td><td>${p.facility_type === 'garage' ? 'Garage' : 'Surface lot'}</td><td>${escapeText(f.id)}</td><td><a target="_blank" rel="noopener" href="${mapUrl}">${p.latitude.toFixed(6)}, ${p.longitude.toFixed(6)}</a></td></tr>`;
+      }).join('');
+      document.querySelectorAll('[data-id]').forEach(button => button.onclick = () => inspect(nodes.find(f => f.id === button.dataset.id)));
+      if (!map) return;
+      group.clearLayers();
+      L.geoJSON({type:'FeatureCollection',features:boundaries.filter(f => ids.has(f.id))}, {
+        style: f => ({color:f.properties.facility_type === 'garage' ? '#2467bd' : '#b51633',weight:1,fillOpacity:0.12}),
+        onEachFeature: (f, layer) => layer.on('click', () => inspect(f))
+      }).addTo(group);
+      visible.forEach(f => {
+        const p = f.properties;
+        L.circleMarker([p.latitude,p.longitude],{radius:5,color:'#fff',weight:1.5,fillColor:p.facility_type === 'garage' ? '#2467bd' : '#b51633',fillOpacity:1})
+          .bindTooltip(`Lot ${p.lot_number} · ${escapeText(p.name)}`)
+          .on('click',() => inspect(f)).addTo(group);
+      });
+      if (visible.length) {
+        map.stop();
+        map.fitBounds(group.getBounds(), {padding:[24,24],maxZoom:17,animate:false});
+      }
+    }
+    scope.addEventListener('change', render);
+    search.addEventListener('input', render);
+    render();
+  </script>
+</body>
+</html>
