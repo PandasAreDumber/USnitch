@@ -1,5 +1,8 @@
 # USnitch
 
+University of Utah parking facility nodes and an interactive map are available
+in [data/parking](data/parking/README.md).
+
 Mobile app built with Expo (React Native), styled with Tailwind via NativeWind and daisyUI theme colors.
 
 ## Project layout

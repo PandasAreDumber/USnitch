@@ -1,0 +1,34 @@
+{
+  "source": "University of Utah public Facilities GIS",
+  "snapshot_date_local": "2026-11-06",
+  "timezone": "America/Denver",
+  "coordinate_system": "WGS84 longitude,latitude (GeoJSON)",
+  "campus_selection_bbox": [
+    -111.86,
+    40.74,
+    -111.8,
+    40.79
+  ],
+  "campus_nodes": 132,
+  "all_nodes": 144,
+  "source_records": {
+    "surface": 119,
+    "garages": 113
+  },
+  "source_sha256": {
+    "surface": "6ec99285c3b39d62eb3df68af008cfa6e616a2f6b9b58e6b1fb93813721fb52f",
+    "garages": "aa038e9b0eb7a38a2e482de3082cf6502ac9eb40da15cef3ae670e6ec8538ad3"
+  },
+  "source_urls": {
+    "surface": "https://fmags.fm.utah.edu/arcgis/rest/services/mapservices/surface_lots/MapServer/0",
+    "garages": "https://fmags.fm.utah.edu/arcgis/rest/services/mapservices/structure_lots/MapServer/0"
+  },
+  "notes": [
+    "All returned records included; source counts independently verified at retrieval.",
+    "Garage floors and same-number surface fragments are merged.",
+    "Lot 42 is reused for Baseball and Price Computing Garage; facility type distinguishes IDs.",
+    "Campus scope includes main campus, medical campus, Research Park and nearby campus housing by explicit bounding box.",
+    "No active/closed status is provided; completeness is relative to this public GIS snapshot.",
+    "Node is an interior representative point, not an entrance or individual parking space."
+  ]
+}
