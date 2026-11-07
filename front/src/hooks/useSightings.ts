@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { listSightings, SIGHTING_WINDOW_MS, type Sighting } from '../lib/sightings';
+import { filterSightingsByTime, type SightingTimeWindow } from '../lib/sightingTimeWindow';
 
-type FeedState = { userId: string | undefined; sightings: Sighting[]; loading: boolean; error: string | null; live: boolean };
-const initialState = (userId?: string): FeedState => ({ userId, sightings: [], loading: Boolean(userId), error: null, live: false });
+type FeedState = { userId: string | undefined; sightings: Sighting[]; loading: boolean; error: string | null; live: boolean; asOf: number };
+const initialState = (userId?: string): FeedState => ({ userId, sightings: [], loading: Boolean(userId), error: null, live: false, asOf: 0 });
 
-export function useSightings(userId: string | undefined) {
+export function useSightings(userId: string | undefined, timeWindow: SightingTimeWindow = 1440) {
   const [state, setState] = useState<FeedState>(() => initialState());
   const reload = useRef<() => Promise<void>>(async () => {});
   const refresh = useCallback(() => reload.current(), []);
@@ -23,7 +24,8 @@ export function useSightings(userId: string | undefined) {
       pending = true;
       try {
         const rows = await listSightings();
-        if (active) setState(value => ({ ...previous(value), sightings: rows, loading: false, error: null }));
+        const asOf = Date.now();
+        if (active) setState(value => ({ ...previous(value), sightings: rows, loading: false, error: null, asOf }));
       } catch {
         if (active) setState(value => ({ ...previous(value), loading: false, error: 'Could not refresh sightings. Check your connection and try again.' }));
       } finally {
@@ -46,7 +48,8 @@ export function useSightings(userId: string | undefined) {
     void load();
     // Recover after dropped sockets and remove reports as they age off the map.
     const timer = setInterval(() => {
-      setState(value => ({ ...previous(value), sightings: previous(value).sightings.filter(row => Date.parse(row.observed_at) >= Date.now() - SIGHTING_WINDOW_MS) }));
+      const asOf = Date.now();
+      setState(value => ({ ...previous(value), asOf, sightings: previous(value).sightings.filter(row => Date.parse(row.observed_at) >= asOf - SIGHTING_WINDOW_MS) }));
       void load();
     }, 30_000);
     const listener = AppState.addEventListener('change', status => { if (status === 'active') void load(); });
@@ -60,5 +63,6 @@ export function useSightings(userId: string | undefined) {
   }, [userId]);
 
   // Never render the previous account's cached feed during an account change.
-  return { ...(state.userId === userId ? state : initialState(userId)), refresh };
+  const current = state.userId === userId ? state : initialState(userId);
+  return { ...current, sightings: filterSightingsByTime(current.sightings, timeWindow, current.asOf), refresh };
 }

@@ -40,6 +40,10 @@ location tracking.
 - Sightings are shared with all signed-in users. Map updates use Realtime with a
   30-second refresh fallback and foreground refresh. Markers show observations
   from the past 24 hours; older rows/photos remain stored for future analysis.
+- The sightings box includes a time dropdown: past 15 minutes, 30 minutes,
+  1 hour, or 24 hours (default). The marker count and map filter together using
+  observation time, and the cutoff updates every 30 seconds. Switching to a
+  longer window immediately restores matching sightings from the cached feed.
 - The map covers the existing campus map bounds. Both the client and database
   reject locations outside that area.
 - Each saved sighting also creates a backend-only training row with `UID`,
