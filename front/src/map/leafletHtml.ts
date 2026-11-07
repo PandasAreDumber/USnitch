@@ -131,7 +131,7 @@ export function buildLeafletHtml(bottomInset = 0) {
       MAX_SCORE = max;
     }
 
-    // Heat scale for the lot outlines: yellow = very unlikely, red = very likely.
+    // Heat scale for the lot outlines: yellow = very unlikely, red = most likely.
     var HEAT_STOPS = [
       [0.0, [255, 230, 80]],  // yellow
       [0.5, [255, 140, 30]],  // orange
@@ -156,7 +156,7 @@ export function buildLeafletHtml(bottomInset = 0) {
     }
     function likelihoodLabel(score) {
       var t = heatLevel(score);
-      if (t >= 0.66) return 'Very likely';
+      if (t >= 0.66) return 'Most likely';
       if (t >= 0.33) return 'Likely';
       if (t >= 0.1) return 'Possible';
       return 'Unlikely';
