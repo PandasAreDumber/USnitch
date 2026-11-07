@@ -7,7 +7,7 @@ Expo SDK 58 / React Native app for University of Utah parking sightings.
 ```sh
 npm ci
 npm run web
-# Or: npm start, then open the project with a compatible native development build.
+# Or: npm start, then open the project in Expo Go.
 ```
 
 Copy `.env.example` to `.env.local` and set the Supabase project URL and
@@ -16,9 +16,12 @@ configured for the linked USnitch project. Restart Expo after changing environme
 variables. Never put a secret/service-role key in an `EXPO_PUBLIC_` variable.
 
 Expo Router loads screens from `src/app/`; `index.ts` is the entry point. Native
-permissions are configured in `app.json`. Camera/library and one-time foreground
-location are used only when the user selects those actions. There is no background
-location tracking.
+permissions are configured in `app.json`. The signed-in campus map requests
+foreground location access to show the user as a blue dot with an accuracy ring.
+Updates stop when the app is backgrounded; these coordinates are not uploaded.
+Use **My location** to recenter, or retry after allowing location access. The map
+remains restricted to campus and explains when the current fix is outside it.
+Camera/library access is requested only when selected in the reporting flow.
 
 ## Accounts and sightings
 
@@ -46,6 +49,24 @@ location tracking.
   `Lot_ID`, and `timestamp`. The database assigns the nearest lot node and rounds
   the observation time down to a 30-minute boundary in the same transaction.
   See [training-table documentation](../supabase/README.md).
+
+## Parked car and notifications
+
+Expand the home sheet to choose a parking lot in **My parked car**, then adjust
+the separate switches for all new sightings, sightings at the parked lot, and
+higher-risk predictions there. Clear the saved lot when you move your car.
+You can also tap a parking lot directly on the map and choose **Park my car here**.
+The popup confirms the saved lot, its outline becomes dashed, and the sheet's
+selection updates immediately. Lot selection and alert preferences are saved on
+this device per account and work without the notification database migration.
+A failed local save shows an error instead of confirming the selection.
+
+**Show in-app alerts** controls custom banners for new sightings and current
+parked-lot predictions. These work in Expo Go, native builds, and web with no OS
+notification permission, APNs/FCM credentials, or notification worker. Banners
+appear only while the app is in use; the header's **Alerts** button opens the
+latest 20 notifications for this session. Use **Preview notification** to test
+a clearly labeled preview immediately. See [notification behavior](../server/NOTIFICATIONS.md).
 
 ## Backend
 

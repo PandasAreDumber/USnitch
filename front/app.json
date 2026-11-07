@@ -31,7 +31,7 @@
         "microphonePermission": false
       }],
       ["expo-location", {
-        "locationWhenInUsePermission": "Use your location to place a parking enforcement sighting on the campus map."
+        "locationWhenInUsePermission": "Show your location on the campus map and help place parking enforcement sightings."
       }]
     ]
   }

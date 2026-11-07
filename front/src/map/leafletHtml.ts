@@ -61,7 +61,12 @@ export function buildLeafletHtml(bottomInset = 0) {
     .lot-meta { color: #D7A49E; }
     .lot-risk { margin-top: 4px; display: flex; align-items: center; gap: 6px; color: #F3E3E0; font-weight: 600; }
     .lot-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+    .park-button { display: block; width: 100%; margin-top: 12px; min-height: 44px; padding: 10px 14px; border: 0; border-radius: 9px; background: #FB503F; color: #fff; font: 600 14px system-ui, sans-serif; cursor: pointer; }
+    .park-button:disabled { background: #66505A; color: #E1CDD4; cursor: default; }
+    .parked-label { margin-top: 10px; color: #91D8A1; font-weight: 700; }
+    .parking-error { margin-top: 8px; max-width: 240px; color: #FFB4AB; }
     .sighting-dot { background: #FFD46B; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 5px rgba(255,212,107,.2), 0 2px 12px #0009; }
+    .user-location-dot { box-sizing: border-box; background: #2684FF; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 5px #2684FF33, 0 2px 8px #0008; pointer-events: none; }
     .selection-dot { background: #FB503F; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 6px #FB503F44; }
     /* Fixed pin for picking a location: the map moves underneath it, and its tip
        marks the map's center. Hidden unless the map is in picking mode. */
@@ -164,6 +169,10 @@ export function buildLeafletHtml(bottomInset = 0) {
     }
 
     var likelihoods = null;
+    var parkedLotId = null;
+    var canPark = false;
+    var parkingBusy = false;
+    var parkingError = null;
     function lotStyle(feature) {
       var score = likelihoods ? likelihoods[feature.properties.id] : undefined;
       var known = typeof score === 'number' && isFinite(score);
@@ -171,7 +180,8 @@ export function buildLeafletHtml(bottomInset = 0) {
       return {
         color: color,
         fillColor: color,
-        weight: known ? 2.5 : 1.25,
+        weight: feature.properties.id === parkedLotId ? 4 : known ? 2.5 : 1.25,
+        dashArray: feature.properties.id === parkedLotId ? '7 4' : null,
         opacity: known ? 1 : 0.7,
         fillOpacity: known ? 0.12 : 0.06,
       };
@@ -187,7 +197,33 @@ export function buildLeafletHtml(bottomInset = 0) {
         html += '<div class="lot-risk"><span class="lot-swatch" style="background:' + heatColor(score) + '"></span>' +
           likelihoodLabel(score) + ' · score ' + score.toFixed(2) + '</div>';
       }
-      return html;
+      var content = document.createElement('div');
+      content.innerHTML = html;
+      if (p.id === parkedLotId) {
+        var parked = document.createElement('div');
+        parked.className = 'parked-label';
+        parked.textContent = '✓ Your car is parked here';
+        content.appendChild(parked);
+      } else {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'park-button';
+        button.disabled = !canPark || parkingBusy || selecting;
+        button.textContent = parkingBusy ? 'Saving…' : 'Park my car here';
+        button.addEventListener('click', function (event) {
+          event.stopPropagation();
+          if (!selecting && canPark && !parkingBusy) postMessage({type:'park-at-lot',id:p.id});
+        });
+        content.appendChild(button);
+      }
+      if (parkingError) {
+        var error = document.createElement('div');
+        error.className = 'parking-error';
+        error.setAttribute('role', 'alert');
+        error.textContent = parkingError;
+        content.appendChild(error);
+      }
+      return content;
     }
 
     var selecting = false;
@@ -201,6 +237,13 @@ export function buildLeafletHtml(bottomInset = 0) {
     var sightingsLayer = L.layerGroup().addTo(map);
     var markers = {};
     var selection;
+    map.createPane('userAccuracy').style.pointerEvents = 'none';
+    map.getPane('userAccuracy').style.zIndex = 450;
+    map.createPane('userLocation').style.pointerEvents = 'none';
+    map.getPane('userLocation').style.zIndex = 650;
+    var userDot;
+    var userAccuracy;
+    var locationFocusRequest = 0;
     var centerPin = document.getElementById('center-pin');
 
     // In picking mode the picked location is always the map's center.
@@ -212,6 +255,12 @@ export function buildLeafletHtml(bottomInset = 0) {
     window.USnitchMap = {
       update: function (state) {
         if (!state || state.type !== 'usnitch-state') return;
+        var parkingChanged = parkedLotId !== (state.parkedLotId || null) || canPark !== Boolean(state.canPark) ||
+          parkingBusy !== Boolean(state.parkingBusy) || parkingError !== (state.parkingError || null);
+        parkedLotId = state.parkedLotId || null;
+        canPark = Boolean(state.canPark);
+        parkingBusy = Boolean(state.parkingBusy);
+        parkingError = state.parkingError || null;
         var nextSelecting = Boolean(state.pickingLocation);
         if (nextSelecting !== selecting) {
           selecting = nextSelecting;
@@ -225,7 +274,7 @@ export function buildLeafletHtml(bottomInset = 0) {
           if (selecting && !state.selectedLocation) postCenter();
         }
         var nextLikelihoods = state.likelihoods || null;
-        if (JSON.stringify(nextLikelihoods) !== JSON.stringify(likelihoods)) {
+        if (parkingChanged || JSON.stringify(nextLikelihoods) !== JSON.stringify(likelihoods)) {
           likelihoods = nextLikelihoods;
           updateMaxScore(likelihoods);
           lots.setStyle(lotStyle);
@@ -237,7 +286,31 @@ export function buildLeafletHtml(bottomInset = 0) {
             var sb = likelihoods ? likelihoods[b.feature.properties.id] || 0 : 0;
             return sa - sb;
           }).forEach(function (layer) { layer.bringToFront(); });
+          lots.eachLayer(function (layer) {
+            if (!selecting && layer.isPopupOpen()) layer.setPopupContent(lotPopup(layer.feature));
+          });
         }
+        var user = state.userLocation;
+        if (user && Number.isFinite(user.latitude) && Number.isFinite(user.longitude)) {
+          var userPoint = L.latLng(user.latitude, user.longitude);
+          if (!userDot) {
+            userDot = L.marker(userPoint, {
+              pane: 'userLocation', interactive: false, keyboard: false, title: 'Your current location',
+              icon: L.divIcon({className:'user-location-dot',iconSize:[18,18],iconAnchor:[9,9]}),
+            }).addTo(map);
+          } else userDot.setLatLng(userPoint);
+          if (typeof user.accuracy === 'number' && isFinite(user.accuracy) && user.accuracy > 0) {
+            if (!userAccuracy) userAccuracy = L.circle(userPoint, {pane:'userAccuracy',interactive:false,color:'#2684FF',weight:1,opacity:0.35,fillOpacity:0.1,radius:user.accuracy}).addTo(map);
+            else userAccuracy.setLatLng(userPoint).setRadius(user.accuracy);
+          } else if (userAccuracy) { map.removeLayer(userAccuracy); userAccuracy = null; }
+          if (!selecting && state.locationFocusRequest !== locationFocusRequest && bounds.contains(userPoint)) {
+            map.setView(userPoint, Math.max(map.getZoom(), 16), {animate:true});
+          }
+        } else {
+          if (userDot) { map.removeLayer(userDot); userDot = null; }
+          if (userAccuracy) { map.removeLayer(userAccuracy); userAccuracy = null; }
+        }
+        locationFocusRequest = state.locationFocusRequest || 0;
         var ids = {};
         (state.sightings || []).slice().sort(function (a, b) {
           return Date.parse(a.observed_at) - Date.parse(b.observed_at);
