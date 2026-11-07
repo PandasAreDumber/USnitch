@@ -42,6 +42,10 @@ location tracking.
   from the past 24 hours; older rows/photos remain stored for future analysis.
 - The map covers the existing campus map bounds. Both the client and database
   reject locations outside that area.
+- Each saved sighting also creates a backend-only training row with `UID`,
+  `Lot_ID`, and `timestamp`. The database assigns the nearest lot node and rounds
+  the observation time down to a 30-minute boundary in the same transaction.
+  See [training-table documentation](../supabase/README.md).
 
 ## Backend
 
