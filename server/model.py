@@ -33,7 +33,9 @@ from sqlalchemy import create_engine, text
 
 load_dotenv()   # reads DATABASE_URL from server/.env
 
-MODEL_PATH = os.environ.get("MODEL_PATH", "model.joblib")
+_model_path = Path(os.environ.get("MODEL_PATH", "models/model.joblib"))
+MODEL_PATH = str(_model_path if _model_path.is_absolute() else Path(__file__).resolve().parent / _model_path)
+Path(MODEL_PATH).parent.mkdir(parents=True, exist_ok=True)
 LOTS_FILE = Path(__file__).resolve().parent.parent / "data/parking/parking_nodes.csv"
 TABLE = "ml_training_data"                       # change to your table's name
 TZ = ZoneInfo("America/Denver")           # only used for the day-of-week and slot-of-day inputs
@@ -201,7 +203,7 @@ def evaluate(data):
     print(f"    baseline (average for lot/day/slot)      {roc_auc_score(was_spotted, baseline):.3f}")
 
 
-def train():
+def train(crop=False):
     lots = load_lots()
     spottings = load_spottings(get_engine())
     if spottings.empty:
