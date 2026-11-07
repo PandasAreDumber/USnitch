@@ -1,0 +1,1058 @@
+[
+  {
+    "Lot_ID": "utah-surface-001",
+    "lot_number": 1,
+    "name": "West Stadium",
+    "facility_type": "surface_lot",
+    "latitude": 40.75957255366207,
+    "longitude": -111.85114031232175
+  },
+  {
+    "Lot_ID": "utah-surface-002",
+    "lot_number": 2,
+    "name": "Law",
+    "facility_type": "surface_lot",
+    "latitude": 40.76162237508433,
+    "longitude": -111.85098235635499
+  },
+  {
+    "Lot_ID": "utah-surface-004",
+    "lot_number": 4,
+    "name": "Chemistry",
+    "facility_type": "surface_lot",
+    "latitude": 40.76181931167352,
+    "longitude": -111.84876396800979
+  },
+  {
+    "Lot_ID": "utah-surface-005",
+    "lot_number": 5,
+    "name": "Marriott South",
+    "facility_type": "surface_lot",
+    "latitude": 40.76169884361947,
+    "longitude": -111.84672477890072
+  },
+  {
+    "Lot_ID": "utah-surface-006",
+    "lot_number": 6,
+    "name": "Marriott Library",
+    "facility_type": "surface_lot",
+    "latitude": 40.762623870509366,
+    "longitude": -111.84792590298855
+  },
+  {
+    "Lot_ID": "utah-surface-008",
+    "lot_number": 8,
+    "name": "Social Work",
+    "facility_type": "surface_lot",
+    "latitude": 40.76057602153199,
+    "longitude": -111.84546750027701
+  },
+  {
+    "Lot_ID": "utah-surface-009",
+    "lot_number": 9,
+    "name": "East Stadium",
+    "facility_type": "surface_lot",
+    "latitude": 40.75967299864291,
+    "longitude": -111.84613941103541
+  },
+  {
+    "Lot_ID": "utah-surface-010",
+    "lot_number": 10,
+    "name": "Sculpture",
+    "facility_type": "surface_lot",
+    "latitude": 40.76021147642087,
+    "longitude": -111.8443459319679
+  },
+  {
+    "Lot_ID": "utah-garages-011",
+    "lot_number": 11,
+    "name": "Central Garage",
+    "facility_type": "garage",
+    "latitude": 40.76162570009147,
+    "longitude": -111.84113859098352
+  },
+  {
+    "Lot_ID": "utah-surface-012",
+    "lot_number": 12,
+    "name": "Business",
+    "facility_type": "surface_lot",
+    "latitude": 40.76059309438078,
+    "longitude": -111.84233498283132
+  },
+  {
+    "Lot_ID": "utah-surface-013",
+    "lot_number": 13,
+    "name": "University Services",
+    "facility_type": "surface_lot",
+    "latitude": 40.76075636157175,
+    "longitude": -111.8408955029187
+  },
+  {
+    "Lot_ID": "utah-surface-014",
+    "lot_number": 14,
+    "name": "Huntsman West",
+    "facility_type": "surface_lot",
+    "latitude": 40.760766362218185,
+    "longitude": -111.84010690986581
+  },
+  {
+    "Lot_ID": "utah-garages-015",
+    "lot_number": 15,
+    "name": "LDS Garage",
+    "facility_type": "garage",
+    "latitude": 40.760633196539644,
+    "longitude": -111.83759335588522
+  },
+  {
+    "Lot_ID": "utah-surface-016",
+    "lot_number": 16,
+    "name": "Madsen Clinic",
+    "facility_type": "surface_lot",
+    "latitude": 40.75851014140544,
+    "longitude": -111.83565469967917
+  },
+  {
+    "Lot_ID": "utah-surface-017",
+    "lot_number": 17,
+    "name": "LDS Pavilion",
+    "facility_type": "surface_lot",
+    "latitude": 40.759173398364396,
+    "longitude": -111.83659407824923
+  },
+  {
+    "Lot_ID": "utah-surface-018",
+    "lot_number": 18,
+    "name": "LDS West",
+    "facility_type": "surface_lot",
+    "latitude": 40.75914720890218,
+    "longitude": -111.83892685130147
+  },
+  {
+    "Lot_ID": "utah-surface-019",
+    "lot_number": 19,
+    "name": "LDS East",
+    "facility_type": "surface_lot",
+    "latitude": 40.75983543970543,
+    "longitude": -111.83672991884194
+  },
+  {
+    "Lot_ID": "utah-surface-020",
+    "lot_number": 20,
+    "name": "Huntsman South",
+    "facility_type": "surface_lot",
+    "latitude": 40.76126213069639,
+    "longitude": -111.83839710238968
+  },
+  {
+    "Lot_ID": "utah-surface-021",
+    "lot_number": 21,
+    "name": "Tanner Dance",
+    "facility_type": "surface_lot",
+    "latitude": 40.76201300884122,
+    "longitude": -111.84019002670905
+  },
+  {
+    "Lot_ID": "utah-surface-022",
+    "lot_number": 22,
+    "name": "Huntsman East",
+    "facility_type": "surface_lot",
+    "latitude": 40.762765298314136,
+    "longitude": -111.8372267892784
+  },
+  {
+    "Lot_ID": "utah-surface-023",
+    "lot_number": 23,
+    "name": "Epicenter",
+    "facility_type": "surface_lot",
+    "latitude": 40.76581871287412,
+    "longitude": -111.84094426349196
+  },
+  {
+    "Lot_ID": "utah-surface-024",
+    "lot_number": 24,
+    "name": "Lassonde",
+    "facility_type": "surface_lot",
+    "latitude": 40.76491875688748,
+    "longitude": -111.84242167201162
+  },
+  {
+    "Lot_ID": "utah-surface-025",
+    "lot_number": 25,
+    "name": "Student Life",
+    "facility_type": "surface_lot",
+    "latitude": 40.76555937110769,
+    "longitude": -111.83779950482824
+  },
+  {
+    "Lot_ID": "utah-surface-026",
+    "lot_number": 26,
+    "name": "Soccer",
+    "facility_type": "surface_lot",
+    "latitude": 40.76767167690637,
+    "longitude": -111.83999680611396
+  },
+  {
+    "Lot_ID": "utah-surface-027",
+    "lot_number": 27,
+    "name": "Broadcast Center",
+    "facility_type": "surface_lot",
+    "latitude": 40.76795337814322,
+    "longitude": -111.8372665619273
+  },
+  {
+    "Lot_ID": "utah-surface-028",
+    "lot_number": 28,
+    "name": "Union East",
+    "facility_type": "surface_lot",
+    "latitude": 40.76487306163099,
+    "longitude": -111.8445937101882
+  },
+  {
+    "Lot_ID": "utah-surface-029",
+    "lot_number": 29,
+    "name": "Union North",
+    "facility_type": "surface_lot",
+    "latitude": 40.76550485978903,
+    "longitude": -111.84645857493368
+  },
+  {
+    "Lot_ID": "utah-surface-030",
+    "lot_number": 30,
+    "name": "Alumni",
+    "facility_type": "surface_lot",
+    "latitude": 40.76659453334018,
+    "longitude": -111.84345477979491
+  },
+  {
+    "Lot_ID": "utah-surface-031",
+    "lot_number": 31,
+    "name": "Warnock Engineering",
+    "facility_type": "surface_lot",
+    "latitude": 40.76719543060591,
+    "longitude": -111.844649299048
+  },
+  {
+    "Lot_ID": "utah-surface-032",
+    "lot_number": 32,
+    "name": "Sorenson",
+    "facility_type": "surface_lot",
+    "latitude": 40.77006416479955,
+    "longitude": -111.8442551302353
+  },
+  {
+    "Lot_ID": "utah-surface-033",
+    "lot_number": 33,
+    "name": "Student Services",
+    "facility_type": "surface_lot",
+    "latitude": 40.765852093635345,
+    "longitude": -111.84785109438013
+  },
+  {
+    "Lot_ID": "utah-surface-034",
+    "lot_number": 34,
+    "name": "Naval Science",
+    "facility_type": "surface_lot",
+    "latitude": 40.76641109152901,
+    "longitude": -111.84908589873672
+  },
+  {
+    "Lot_ID": "utah-surface-035",
+    "lot_number": 35,
+    "name": "Presidents Circle",
+    "facility_type": "surface_lot",
+    "latitude": 40.7648361542228,
+    "longitude": -111.8494942549035
+  },
+  {
+    "Lot_ID": "utah-surface-036",
+    "lot_number": 36,
+    "name": "Fine Arts West",
+    "facility_type": "surface_lot",
+    "latitude": 40.76332351668886,
+    "longitude": -111.85327547676192
+  },
+  {
+    "Lot_ID": "utah-surface-037",
+    "lot_number": 37,
+    "name": "Gardner Hall",
+    "facility_type": "surface_lot",
+    "latitude": 40.766692373096845,
+    "longitude": -111.8514662298317
+  },
+  {
+    "Lot_ID": "utah-garages-038",
+    "lot_number": 38,
+    "name": "Northwest Garage",
+    "facility_type": "garage",
+    "latitude": 40.76654025380978,
+    "longitude": -111.84863669052856
+  },
+  {
+    "Lot_ID": "utah-surface-039",
+    "lot_number": 39,
+    "name": "Merrill Engineering",
+    "facility_type": "surface_lot",
+    "latitude": 40.769886804475355,
+    "longitude": -111.84628995418691
+  },
+  {
+    "Lot_ID": "utah-surface-040",
+    "lot_number": 40,
+    "name": "Guardsman Way",
+    "facility_type": "surface_lot",
+    "latitude": 40.757133251168526,
+    "longitude": -111.84455021640002
+  },
+  {
+    "Lot_ID": "utah-surface-041",
+    "lot_number": 41,
+    "name": "Athletic Training Center",
+    "facility_type": "surface_lot",
+    "latitude": 40.754835167785735,
+    "longitude": -111.84619149535507
+  },
+  {
+    "Lot_ID": "utah-garages-042",
+    "lot_number": 42,
+    "name": "Price Computing Garage",
+    "facility_type": "garage",
+    "latitude": 40.76808870474386,
+    "longitude": -111.84318642692875
+  },
+  {
+    "Lot_ID": "utah-surface-042",
+    "lot_number": 42,
+    "name": "Baseball",
+    "facility_type": "surface_lot",
+    "latitude": 40.75384337257167,
+    "longitude": -111.84446979901273
+  },
+  {
+    "Lot_ID": "utah-surface-043",
+    "lot_number": 43,
+    "name": "HEDCO",
+    "facility_type": "surface_lot",
+    "latitude": 40.76609077443805,
+    "longitude": -111.8456450028379
+  },
+  {
+    "Lot_ID": "utah-surface-044",
+    "lot_number": 44,
+    "name": "Kennecott",
+    "facility_type": "surface_lot",
+    "latitude": 40.76819075170867,
+    "longitude": -111.84817793374772
+  },
+  {
+    "Lot_ID": "utah-garages-045",
+    "lot_number": 45,
+    "name": "ACC Garage",
+    "facility_type": "garage",
+    "latitude": 40.770632987834176,
+    "longitude": -111.84106384690037
+  },
+  {
+    "Lot_ID": "utah-surface-046",
+    "lot_number": 46,
+    "name": "USTAR",
+    "facility_type": "surface_lot",
+    "latitude": 40.76869503061607,
+    "longitude": -111.84352927877109
+  },
+  {
+    "Lot_ID": "utah-surface-047",
+    "lot_number": 47,
+    "name": "East Wasatch",
+    "facility_type": "surface_lot",
+    "latitude": 40.769815972194436,
+    "longitude": -111.84151636338922
+  },
+  {
+    "Lot_ID": "utah-garages-048",
+    "lot_number": 48,
+    "name": "PCH Garage",
+    "facility_type": "garage",
+    "latitude": 40.77230315304108,
+    "longitude": -111.83972293864878
+  },
+  {
+    "Lot_ID": "utah-surface-049",
+    "lot_number": 49,
+    "name": "PCH South",
+    "facility_type": "surface_lot",
+    "latitude": 40.77111855845334,
+    "longitude": -111.83985850091071
+  },
+  {
+    "Lot_ID": "utah-garages-050",
+    "lot_number": 50,
+    "name": "North Medical Garage",
+    "facility_type": "garage",
+    "latitude": 40.77172345762644,
+    "longitude": -111.83796495267512
+  },
+  {
+    "Lot_ID": "utah-garages-051",
+    "lot_number": 51,
+    "name": "Helipad Garage",
+    "facility_type": "garage",
+    "latitude": 40.77264701191707,
+    "longitude": -111.83726252528648
+  },
+  {
+    "Lot_ID": "utah-surface-052",
+    "lot_number": 52,
+    "name": "Hospital Loop",
+    "facility_type": "surface_lot",
+    "latitude": 40.772338245952966,
+    "longitude": -111.83812683695263
+  },
+  {
+    "Lot_ID": "utah-surface-053",
+    "lot_number": 53,
+    "name": "Rehab",
+    "facility_type": "surface_lot",
+    "latitude": 40.77177067715867,
+    "longitude": -111.83583935851365
+  },
+  {
+    "Lot_ID": "utah-surface-054",
+    "lot_number": 54,
+    "name": "Hospital West",
+    "facility_type": "surface_lot",
+    "latitude": 40.76877017358284,
+    "longitude": -111.83682521977967
+  },
+  {
+    "Lot_ID": "utah-garages-055",
+    "lot_number": 55,
+    "name": "Nursing Garage",
+    "facility_type": "garage",
+    "latitude": 40.769138355440404,
+    "longitude": -111.83494328173599
+  },
+  {
+    "Lot_ID": "utah-garages-056",
+    "lot_number": 56,
+    "name": "West Medical Garage",
+    "facility_type": "garage",
+    "latitude": 40.77011806684805,
+    "longitude": -111.83708609154706
+  },
+  {
+    "Lot_ID": "utah-garages-057",
+    "lot_number": 57,
+    "name": "Moran Garage",
+    "facility_type": "garage",
+    "latitude": 40.769927399346756,
+    "longitude": -111.83735298101487
+  },
+  {
+    "Lot_ID": "utah-surface-059",
+    "lot_number": 59,
+    "name": "Jewish Community Center",
+    "facility_type": "surface_lot",
+    "latitude": 40.77371330334002,
+    "longitude": -111.83908255402869
+  },
+  {
+    "Lot_ID": "utah-garages-061",
+    "lot_number": 61,
+    "name": "HSEB Garage",
+    "facility_type": "garage",
+    "latitude": 40.76899732063565,
+    "longitude": -111.83360484673057
+  },
+  {
+    "Lot_ID": "utah-surface-062",
+    "lot_number": 62,
+    "name": "Genetics",
+    "facility_type": "surface_lot",
+    "latitude": 40.76959293258402,
+    "longitude": -111.83327759309675
+  },
+  {
+    "Lot_ID": "utah-surface-063",
+    "lot_number": 63,
+    "name": "Guest House",
+    "facility_type": "surface_lot",
+    "latitude": 40.767014998871396,
+    "longitude": -111.83534356912763
+  },
+  {
+    "Lot_ID": "utah-garages-064",
+    "lot_number": 64,
+    "name": "South Medical Garage",
+    "facility_type": "garage",
+    "latitude": 40.769301468754165,
+    "longitude": -111.83255092574298
+  },
+  {
+    "Lot_ID": "utah-surface-065",
+    "lot_number": 65,
+    "name": "Comparative Medicine",
+    "facility_type": "surface_lot",
+    "latitude": 40.769799212118386,
+    "longitude": -111.83268390922251
+  },
+  {
+    "Lot_ID": "utah-surface-066",
+    "lot_number": 66,
+    "name": "Hospital East",
+    "facility_type": "surface_lot",
+    "latitude": 40.769496460798194,
+    "longitude": -111.8312173108987
+  },
+  {
+    "Lot_ID": "utah-garages-067",
+    "lot_number": 67,
+    "name": "Health Sciences Garage",
+    "facility_type": "garage",
+    "latitude": 40.7736871819656,
+    "longitude": -111.83762544067508
+  },
+  {
+    "Lot_ID": "utah-garages-068",
+    "lot_number": 68,
+    "name": "HCI Garage",
+    "facility_type": "garage",
+    "latitude": 40.773015045835606,
+    "longitude": -111.83563663999439
+  },
+  {
+    "Lot_ID": "utah-surface-069",
+    "lot_number": 69,
+    "name": "Chapel Glenn",
+    "facility_type": "surface_lot",
+    "latitude": 40.767259758716534,
+    "longitude": -111.83438857073128
+  },
+  {
+    "Lot_ID": "utah-surface-070",
+    "lot_number": 70,
+    "name": "Pharmacy",
+    "facility_type": "surface_lot",
+    "latitude": 40.768397820943335,
+    "longitude": -111.83308233684073
+  },
+  {
+    "Lot_ID": "utah-surface-071",
+    "lot_number": 71,
+    "name": "CVRTI",
+    "facility_type": "surface_lot",
+    "latitude": 40.767377128966274,
+    "longitude": -111.83201473664812
+  },
+  {
+    "Lot_ID": "utah-surface-072",
+    "lot_number": 72,
+    "name": "Biopolymers",
+    "facility_type": "surface_lot",
+    "latitude": 40.76770470035005,
+    "longitude": -111.83173985800914
+  },
+  {
+    "Lot_ID": "utah-surface-073",
+    "lot_number": 73,
+    "name": "Medical Towers",
+    "facility_type": "surface_lot",
+    "latitude": 40.767978558157594,
+    "longitude": -111.83084668055292
+  },
+  {
+    "Lot_ID": "utah-surface-074",
+    "lot_number": 74,
+    "name": "Shoreline",
+    "facility_type": "surface_lot",
+    "latitude": 40.76626634355141,
+    "longitude": -111.82900881979648
+  },
+  {
+    "Lot_ID": "utah-surface-075",
+    "lot_number": 75,
+    "name": "Red Butte Garden",
+    "facility_type": "surface_lot",
+    "latitude": 40.766217715086796,
+    "longitude": -111.82816232314397
+  },
+  {
+    "Lot_ID": "utah-surface-076",
+    "lot_number": 76,
+    "name": "Bath House",
+    "facility_type": "surface_lot",
+    "latitude": 40.76548830887044,
+    "longitude": -111.8292625303481
+  },
+  {
+    "Lot_ID": "utah-surface-077",
+    "lot_number": 77,
+    "name": "Officers Club",
+    "facility_type": "surface_lot",
+    "latitude": 40.76559111677025,
+    "longitude": -111.83492099001953
+  },
+  {
+    "Lot_ID": "utah-surface-078",
+    "lot_number": 78,
+    "name": "Stilwell Field",
+    "facility_type": "surface_lot",
+    "latitude": 40.76432205413866,
+    "longitude": -111.83358790279604
+  },
+  {
+    "Lot_ID": "utah-surface-079",
+    "lot_number": 79,
+    "name": "Gateway Heights",
+    "facility_type": "surface_lot",
+    "latitude": 40.76531571057186,
+    "longitude": -111.8318664373125
+  },
+  {
+    "Lot_ID": "utah-surface-080",
+    "lot_number": 80,
+    "name": "East Sage Point",
+    "facility_type": "surface_lot",
+    "latitude": 40.76434944391841,
+    "longitude": -111.82901968496705
+  },
+  {
+    "Lot_ID": "utah-garages-081",
+    "lot_number": 81,
+    "name": "Shoreline Ridge Garage",
+    "facility_type": "garage",
+    "latitude": 40.767890461998284,
+    "longitude": -111.83047438835634
+  },
+  {
+    "Lot_ID": "utah-surface-082",
+    "lot_number": 82,
+    "name": "Benchmark",
+    "facility_type": "surface_lot",
+    "latitude": 40.76560453048096,
+    "longitude": -111.83008372748293
+  },
+  {
+    "Lot_ID": "utah-surface-083",
+    "lot_number": 83,
+    "name": "Museum",
+    "facility_type": "surface_lot",
+    "latitude": 40.76396523850047,
+    "longitude": -111.83315924385087
+  },
+  {
+    "Lot_ID": "utah-surface-084",
+    "lot_number": 84,
+    "name": "Theater",
+    "facility_type": "surface_lot",
+    "latitude": 40.76449561401003,
+    "longitude": -111.83155190903895
+  },
+  {
+    "Lot_ID": "utah-surface-087",
+    "lot_number": 87,
+    "name": "Sage Point",
+    "facility_type": "surface_lot",
+    "latitude": 40.762597967743446,
+    "longitude": -111.82934355851182
+  },
+  {
+    "Lot_ID": "utah-surface-088",
+    "lot_number": 88,
+    "name": "Shuttles",
+    "facility_type": "surface_lot",
+    "latitude": 40.76141256982021,
+    "longitude": -111.83038127486523
+  },
+  {
+    "Lot_ID": "utah-surface-089",
+    "lot_number": 89,
+    "name": "Fort Douglas Northwest",
+    "facility_type": "surface_lot",
+    "latitude": 40.76093819483397,
+    "longitude": -111.8347016409401
+  },
+  {
+    "Lot_ID": "utah-surface-090",
+    "lot_number": 90,
+    "name": "Fort Douglas South",
+    "facility_type": "surface_lot",
+    "latitude": 40.758706517942684,
+    "longitude": -111.8330979222516
+  },
+  {
+    "Lot_ID": "utah-surface-091",
+    "lot_number": 91,
+    "name": "Fort Douglas Northeast",
+    "facility_type": "surface_lot",
+    "latitude": 40.76147736554422,
+    "longitude": -111.83192965617073
+  },
+  {
+    "Lot_ID": "utah-surface-092",
+    "lot_number": 92,
+    "name": "Soldiers Circle",
+    "facility_type": "surface_lot",
+    "latitude": 40.76232940497964,
+    "longitude": -111.83204501442822
+  },
+  {
+    "Lot_ID": "utah-surface-093",
+    "lot_number": 93,
+    "name": "West USA",
+    "facility_type": "surface_lot",
+    "latitude": 40.752785191584906,
+    "longitude": -111.83432727075183
+  },
+  {
+    "Lot_ID": "utah-surface-094",
+    "lot_number": 94,
+    "name": "East USA",
+    "facility_type": "surface_lot",
+    "latitude": 40.752538287395936,
+    "longitude": -111.82731812924642
+  },
+  {
+    "Lot_ID": "utah-garages-099",
+    "lot_number": 99,
+    "name": "UUSOD Garage",
+    "facility_type": "garage",
+    "latitude": 40.75759947421649,
+    "longitude": -111.8320362849796
+  },
+  {
+    "Lot_ID": "utah-garages-100",
+    "lot_number": 100,
+    "name": "Ortho Garage",
+    "facility_type": "garage",
+    "latitude": 40.756954073742875,
+    "longitude": -111.8324984739012
+  },
+  {
+    "Lot_ID": "utah-surface-101",
+    "lot_number": 101,
+    "name": "Health Professions",
+    "facility_type": "surface_lot",
+    "latitude": 40.757960470514234,
+    "longitude": -111.83061238493434
+  },
+  {
+    "Lot_ID": "utah-surface-102",
+    "lot_number": 102,
+    "name": "480 Wakara Way",
+    "facility_type": "surface_lot",
+    "latitude": 40.75894178753238,
+    "longitude": -111.82957947522299
+  },
+  {
+    "Lot_ID": "utah-surface-103",
+    "lot_number": 103,
+    "name": "420 Wakara",
+    "facility_type": "surface_lot",
+    "latitude": 40.76020362073596,
+    "longitude": -111.82961870863474
+  },
+  {
+    "Lot_ID": "utah-surface-104",
+    "lot_number": 104,
+    "name": "400 Wakara",
+    "facility_type": "surface_lot",
+    "latitude": 40.76072073721729,
+    "longitude": -111.82915126863662
+  },
+  {
+    "Lot_ID": "utah-surface-105",
+    "lot_number": 105,
+    "name": "390 Wakara",
+    "facility_type": "surface_lot",
+    "latitude": 40.76114878628405,
+    "longitude": -111.82785154765014
+  },
+  {
+    "Lot_ID": "utah-surface-106",
+    "lot_number": 106,
+    "name": "360 Wakara",
+    "facility_type": "surface_lot",
+    "latitude": 40.76182936226549,
+    "longitude": -111.8281293240947
+  },
+  {
+    "Lot_ID": "utah-garages-107",
+    "lot_number": 107,
+    "name": "Myriad Garage",
+    "facility_type": "garage",
+    "latitude": 40.76403650820113,
+    "longitude": -111.82598657117761
+  },
+  {
+    "Lot_ID": "utah-garages-108",
+    "lot_number": 108,
+    "name": "295 Chipeta Garage",
+    "facility_type": "garage",
+    "latitude": 40.76455588166858,
+    "longitude": -111.82582332349841
+  },
+  {
+    "Lot_ID": "utah-garages-109",
+    "lot_number": 109,
+    "name": "310 Wakara Garage",
+    "facility_type": "garage",
+    "latitude": 40.76319913136351,
+    "longitude": -111.82497525456114
+  },
+  {
+    "Lot_ID": "utah-garages-110",
+    "lot_number": 110,
+    "name": "320 Wakara Garage",
+    "facility_type": "garage",
+    "latitude": 40.76220148118614,
+    "longitude": -111.82640981876006
+  },
+  {
+    "Lot_ID": "utah-garages-111",
+    "lot_number": 111,
+    "name": "305 Chipeta Garage",
+    "facility_type": "garage",
+    "latitude": 40.76273405421439,
+    "longitude": -111.82691515837354
+  },
+  {
+    "Lot_ID": "utah-surface-112",
+    "lot_number": 112,
+    "name": "Red Butte Visitors Center",
+    "facility_type": "surface_lot",
+    "latitude": 40.76508131602033,
+    "longitude": -111.82432457645689
+  },
+  {
+    "Lot_ID": "utah-surface-113",
+    "lot_number": 113,
+    "name": "Natural History",
+    "facility_type": "surface_lot",
+    "latitude": 40.76350348757768,
+    "longitude": -111.82339057246493
+  },
+  {
+    "Lot_ID": "utah-surface-115",
+    "lot_number": 115,
+    "name": "375 Chipeta",
+    "facility_type": "surface_lot",
+    "latitude": 40.761349278720814,
+    "longitude": -111.82487437940344
+  },
+  {
+    "Lot_ID": "utah-surface-116",
+    "lot_number": 116,
+    "name": "391 Chipeta",
+    "facility_type": "surface_lot",
+    "latitude": 40.76136754929209,
+    "longitude": -111.8245373850997
+  },
+  {
+    "Lot_ID": "utah-surface-117",
+    "lot_number": 117,
+    "name": "North HMHI",
+    "facility_type": "surface_lot",
+    "latitude": 40.7588005238253,
+    "longitude": -111.82233657318969
+  },
+  {
+    "Lot_ID": "utah-surface-118",
+    "lot_number": 118,
+    "name": "383 Colorow",
+    "facility_type": "surface_lot",
+    "latitude": 40.76155995287748,
+    "longitude": -111.82234200230596
+  },
+  {
+    "Lot_ID": "utah-garages-119",
+    "lot_number": 119,
+    "name": "HMHI Garage",
+    "facility_type": "garage",
+    "latitude": 40.759527860905564,
+    "longitude": -111.82222766437326
+  },
+  {
+    "Lot_ID": "utah-surface-120",
+    "lot_number": 120,
+    "name": "South HMHI",
+    "facility_type": "surface_lot",
+    "latitude": 40.757440957992074,
+    "longitude": -111.82276808260035
+  },
+  {
+    "Lot_ID": "utah-surface-121",
+    "lot_number": 121,
+    "name": "500 Chipeta",
+    "facility_type": "surface_lot",
+    "latitude": 40.75939345080211,
+    "longitude": -111.81874106054613
+  },
+  {
+    "Lot_ID": "utah-surface-122",
+    "lot_number": 122,
+    "name": "515 Colorow",
+    "facility_type": "surface_lot",
+    "latitude": 40.75774315679479,
+    "longitude": -111.81783942897209
+  },
+  {
+    "Lot_ID": "utah-surface-123",
+    "lot_number": 123,
+    "name": "575 Chipeta",
+    "facility_type": "surface_lot",
+    "latitude": 40.75586934729468,
+    "longitude": -111.82209596700824
+  },
+  {
+    "Lot_ID": "utah-surface-124",
+    "lot_number": 124,
+    "name": "675 Arapeen",
+    "facility_type": "surface_lot",
+    "latitude": 40.75532883233297,
+    "longitude": -111.82403140473471
+  },
+  {
+    "Lot_ID": "utah-surface-125",
+    "lot_number": 125,
+    "name": "North INC",
+    "facility_type": "surface_lot",
+    "latitude": 40.75390744705392,
+    "longitude": -111.82559542872306
+  },
+  {
+    "Lot_ID": "utah-surface-126",
+    "lot_number": 126,
+    "name": "410 Chipeta Way",
+    "facility_type": "surface_lot",
+    "latitude": 40.75978739892052,
+    "longitude": -111.82595625797666
+  },
+  {
+    "Lot_ID": "utah-surface-127",
+    "lot_number": 127,
+    "name": "540 Chipeta",
+    "facility_type": "surface_lot",
+    "latitude": 40.75715957182256,
+    "longitude": -111.82635296891284
+  },
+  {
+    "Lot_ID": "utah-surface-128",
+    "lot_number": 128,
+    "name": "Wakara East",
+    "facility_type": "surface_lot",
+    "latitude": 40.75955431824462,
+    "longitude": -111.8264208938936
+  },
+  {
+    "Lot_ID": "utah-surface-129",
+    "lot_number": 129,
+    "name": "Wakara West",
+    "facility_type": "surface_lot",
+    "latitude": 40.75815885901571,
+    "longitude": -111.82774377255731
+  },
+  {
+    "Lot_ID": "utah-surface-130",
+    "lot_number": 130,
+    "name": "505 Wakara",
+    "facility_type": "surface_lot",
+    "latitude": 40.75802691214184,
+    "longitude": -111.82925615686062
+  },
+  {
+    "Lot_ID": "utah-surface-131",
+    "lot_number": 131,
+    "name": "615 Arapeen",
+    "facility_type": "surface_lot",
+    "latitude": 40.75687771627341,
+    "longitude": -111.8276774924891
+  },
+  {
+    "Lot_ID": "utah-surface-136",
+    "lot_number": 136,
+    "name": "Blackhawk",
+    "facility_type": "surface_lot",
+    "latitude": 40.75570757269794,
+    "longitude": -111.82879493180072
+  },
+  {
+    "Lot_ID": "utah-surface-137",
+    "lot_number": 137,
+    "name": "South Komas",
+    "facility_type": "surface_lot",
+    "latitude": 40.75575699169221,
+    "longitude": -111.82934259455075
+  },
+  {
+    "Lot_ID": "utah-surface-138",
+    "lot_number": 138,
+    "name": "North Komas",
+    "facility_type": "surface_lot",
+    "latitude": 40.75670133971157,
+    "longitude": -111.83030632431698
+  },
+  {
+    "Lot_ID": "utah-surface-139",
+    "lot_number": 139,
+    "name": "600 Komas",
+    "facility_type": "surface_lot",
+    "latitude": 40.75556923704192,
+    "longitude": -111.8307494701598
+  },
+  {
+    "Lot_ID": "utah-surface-140",
+    "lot_number": 140,
+    "name": "630 Komas",
+    "facility_type": "surface_lot",
+    "latitude": 40.754626548390476,
+    "longitude": -111.8320413577609
+  },
+  {
+    "Lot_ID": "utah-surface-141",
+    "lot_number": 141,
+    "name": "650 Komas",
+    "facility_type": "surface_lot",
+    "latitude": 40.75397245403135,
+    "longitude": -111.8296715135799
+  },
+  {
+    "Lot_ID": "utah-surface-142",
+    "lot_number": 142,
+    "name": "770 Komas",
+    "facility_type": "surface_lot",
+    "latitude": 40.752672520153865,
+    "longitude": -111.82989394746602
+  },
+  {
+    "Lot_ID": "utah-surface-143",
+    "lot_number": 143,
+    "name": "South Blackhawk",
+    "facility_type": "surface_lot",
+    "latitude": 40.75504551663471,
+    "longitude": -111.82715559839362
+  },
+  {
+    "Lot_ID": "utah-surface-144",
+    "lot_number": 144,
+    "name": "South INC",
+    "facility_type": "surface_lot",
+    "latitude": 40.752850138842184,
+    "longitude": -111.82546585720306
+  },
+  {
+    "Lot_ID": "utah-surface-200",
+    "lot_number": 200,
+    "name": "PCMC West Drive",
+    "facility_type": "surface_lot",
+    "latitude": 40.77067207744946,
+    "longitude": -111.84225781527397
+  },
+  {
+    "Lot_ID": "utah-surface-201",
+    "lot_number": 201,
+    "name": "Ivory University House",
+    "facility_type": "surface_lot",
+    "latitude": 40.76047607506142,
+    "longitude": -111.83589123256571
+  }
+]
