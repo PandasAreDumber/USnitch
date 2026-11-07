@@ -59,6 +59,8 @@ export function buildLeafletHtml(bottomInset = 0) {
     .leaflet-popup-content { margin: 10px 14px; font: 13px/1.4 system-ui, sans-serif; }
     .lot-name { font-weight: 700; color: #FFFFFF; }
     .lot-meta { color: #D7A49E; }
+    .lot-risk { margin-top: 4px; display: flex; align-items: center; gap: 6px; color: #F3E3E0; font-weight: 600; }
+    .lot-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
     .sighting-dot { background: #FFD46B; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 5px rgba(255,212,107,.2), 0 2px 12px #0009; }
     .selection-dot { background: #FB503F; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 6px #FB503F44; }
     /* Fixed pin for picking a location: the map moves underneath it, and its tip
@@ -108,10 +110,52 @@ export function buildLeafletHtml(bottomInset = 0) {
     tiles.once('tileerror', notifyReady);
     tiles.addTo(map);
 
-    var LOT_COLORS = {
-      surface_lot: '#FB503F', // Ogre Odor
-      garage: '#D7A49E', // Mellow Rose
-    };
+    // Before predictions arrive (or for a lot the server didn't score) outlines are neutral.
+    var NO_DATA_COLOR = '#8A7A80';
+    var MIN_SCORE = 0.05; // the model's floor ("nothing reported")
+    // Full red = the highest score in the current predictions, so the riskiest
+    // lot for the picked time is always red and the rest are scaled against it.
+    // Recomputed every time new predictions arrive (see updateMaxScore).
+    var MAX_SCORE = 1;
+    function updateMaxScore(scores) {
+      var max = MIN_SCORE;
+      if (scores) Object.keys(scores).forEach(function (id) {
+        var s = scores[id];
+        if (typeof s === 'number' && isFinite(s) && s > max) max = s;
+      });
+      MAX_SCORE = max;
+    }
+
+    // Heat scale for the lot outlines: yellow = very unlikely, red = very likely.
+    var HEAT_STOPS = [
+      [0.0, [255, 230, 80]],  // yellow
+      [0.5, [255, 140, 30]],  // orange
+      [1.0, [230, 30, 30]],   // red
+    ];
+    function heatLevel(score) {
+      // Every lot at the floor (nothing predicted anywhere): all yellow.
+      if (MAX_SCORE - MIN_SCORE < 1e-6) return 0;
+      return Math.max(0, Math.min(1, (score - MIN_SCORE) / (MAX_SCORE - MIN_SCORE)));
+    }
+    function heatColor(score) {
+      var t = heatLevel(score);
+      for (var i = 1; i < HEAT_STOPS.length; i++) {
+        var a = HEAT_STOPS[i - 1], b = HEAT_STOPS[i];
+        if (t <= b[0]) {
+          var f = (t - a[0]) / (b[0] - a[0]);
+          var rgb = a[1].map(function (v, k) { return Math.round(v + (b[1][k] - v) * f); });
+          return 'rgb(' + rgb.join(',') + ')';
+        }
+      }
+      return 'rgb(' + HEAT_STOPS[HEAT_STOPS.length - 1][1].join(',') + ')';
+    }
+    function likelihoodLabel(score) {
+      var t = heatLevel(score);
+      if (t >= 0.66) return 'Very likely';
+      if (t >= 0.33) return 'Likely';
+      if (t >= 0.1) return 'Possible';
+      return 'Unlikely';
+    }
 
     function escapeText(value) {
       return String(value).replace(/[&<>"']/g, function (c) {
@@ -119,19 +163,38 @@ export function buildLeafletHtml(bottomInset = 0) {
       });
     }
 
+    var likelihoods = null;
+    function lotStyle(feature) {
+      var score = likelihoods ? likelihoods[feature.properties.id] : undefined;
+      var known = typeof score === 'number' && isFinite(score);
+      var color = known ? heatColor(score) : NO_DATA_COLOR;
+      return {
+        color: color,
+        fillColor: color,
+        weight: known ? 2.5 : 1.25,
+        opacity: known ? 1 : 0.7,
+        fillOpacity: known ? 0.12 : 0.06,
+      };
+    }
+    function lotPopup(feature) {
+      var p = feature.properties;
+      var score = likelihoods ? likelihoods[p.id] : undefined;
+      var html =
+        '<div class="lot-name">' + escapeText(p.name) + '</div>' +
+        '<div class="lot-meta">Lot ' + escapeText(p.lot) + ' · ' +
+        (p.type === 'garage' ? 'Garage' : 'Surface lot') + '</div>';
+      if (typeof score === 'number' && isFinite(score)) {
+        html += '<div class="lot-risk"><span class="lot-swatch" style="background:' + heatColor(score) + '"></span>' +
+          likelihoodLabel(score) + ' · score ' + score.toFixed(2) + '</div>';
+      }
+      return html;
+    }
+
     var selecting = false;
     var lots = L.geoJSON(${PARKING_LOTS_JSON}, {
-      style: function (feature) {
-        var color = LOT_COLORS[feature.properties.type] || LOT_COLORS.surface_lot;
-        return { color: color, fillColor: color, weight: 1.5, opacity: 0.9, fillOpacity: 0.3 };
-      },
+      style: lotStyle,
       onEachFeature: function (feature, layer) {
-        var p = feature.properties;
-        layer.lotPopup =
-          '<div class="lot-name">' + escapeText(p.name) + '</div>' +
-          '<div class="lot-meta">Lot ' + escapeText(p.lot) + ' · ' +
-          (p.type === 'garage' ? 'Garage' : 'Surface lot') + '</div>';
-        layer.bindPopup(layer.lotPopup);
+        layer.bindPopup(function () { return lotPopup(feature); });
       },
     }).addTo(map);
 
@@ -155,11 +218,25 @@ export function buildLeafletHtml(bottomInset = 0) {
           document.body.classList.toggle('picking', selecting);
           lots.eachLayer(function (layer) {
             if (selecting) layer.unbindPopup();
-            else layer.bindPopup(layer.lotPopup);
+            else layer.bindPopup(function () { return lotPopup(layer.feature); });
           });
           map.closePopup();
           // Start with the pin's current spot picked, so it matches what's shown.
           if (selecting && !state.selectedLocation) postCenter();
+        }
+        var nextLikelihoods = state.likelihoods || null;
+        if (JSON.stringify(nextLikelihoods) !== JSON.stringify(likelihoods)) {
+          likelihoods = nextLikelihoods;
+          updateMaxScore(likelihoods);
+          lots.setStyle(lotStyle);
+          // Biggest risks on top so their outlines aren't hidden by neighbours.
+          var order = [];
+          lots.eachLayer(function (layer) { order.push(layer); });
+          order.sort(function (a, b) {
+            var sa = likelihoods ? likelihoods[a.feature.properties.id] || 0 : 0;
+            var sb = likelihoods ? likelihoods[b.feature.properties.id] || 0 : 0;
+            return sa - sb;
+          }).forEach(function (layer) { layer.bringToFront(); });
         }
         var ids = {};
         (state.sightings || []).slice().sort(function (a, b) {

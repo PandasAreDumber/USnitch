@@ -4,6 +4,8 @@ export type MapSighting = Pick<Sighting, 'id' | 'latitude' | 'longitude' | 'obse
 export type CampusMapProps = {
   onReady?: () => void;
   sightings?: MapSighting[];
+  // Enforcement likelihood per lot id (0.05–1) from the prediction server; colors lot outlines.
+  likelihoods?: Record<string, number>;
   pickingLocation?: boolean;
   selectedLocation?: Coordinates | null;
   onLocationSelected?: (location: Coordinates) => void;
@@ -16,6 +18,7 @@ export function getMapState(props: CampusMapProps) {
   return {
     type: 'usnitch-state',
     sightings: props.sightings ?? [],
+    likelihoods: props.likelihoods ?? null,
     pickingLocation: props.pickingLocation ?? false,
     selectedLocation: props.selectedLocation ?? null,
   };
