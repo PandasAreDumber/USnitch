@@ -33,7 +33,7 @@ load_dotenv()   # reads DATABASE_URL from server/.env
 
 MODEL_PATH = os.environ.get("MODEL_PATH", "model.joblib")
 LOTS_FILE = Path(__file__).resolve().parent.parent / "data/parking/parking_nodes.csv"
-TABLE = "spottings"                       # change to your table's name
+TABLE = "ml_training_data"                       # change to your table's name
 TZ = ZoneInfo("America/Denver")
 
 SLOT = "30min"
@@ -41,7 +41,7 @@ SPOTTED, NOT_SPOTTED = 1.0, 0.05
 NOTHING_NEARBY_M = 10_000                 # "distance to nearest spotting" when nothing was spotted
 UNKNOWN_PREV_FRACTION = 0.3               # share of training rows that hide the previous-slot inputs
 HOLDOUT_DAYS = 14                         # most recent days, held back to test the model
-
+HALF_LIFE_WEEKS = 8                       # data this many weeks old counts half as much as today's
 
 # ---------- 1. Get the data ----------
 
@@ -161,7 +161,10 @@ def fit(data):
         categorical_features=["lot", "dow"], max_iter=300, learning_rate=0.05,
         max_leaf_nodes=63, random_state=0,
     )
-    model.fit(hide_some_previous_inputs(data[FEATURES]), data.spottings)
+    # recent data counts more, so the model keeps up when the patrol schedule changes
+    age_weeks = (data.slot_start.max() - data.slot_start).dt.days / 7
+    weights = 0.5 ** (age_weeks / HALF_LIFE_WEEKS)
+    model.fit(hide_some_previous_inputs(data[FEATURES]), data.spottings, sample_weight=weights)
     return model
 
 
