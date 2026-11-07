@@ -2,6 +2,7 @@
   "expo": {
     "name": "USnitch",
     "slug": "usnitch",
+    "scheme": "usnitch",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +26,17 @@
     "splash": {
       "backgroundColor": "#43333A",
       "resizeMode": "contain"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      ["expo-image-picker", {
+        "photosPermission": "Choose a photo to share a parking enforcement sighting.",
+        "cameraPermission": "Take a photo to share a parking enforcement sighting.",
+        "microphonePermission": false
+      }],
+      ["expo-location", {
+        "locationWhenInUsePermission": "Use your location to place a parking enforcement sighting on the campus map."
+      }]
+    ]
   }
 }

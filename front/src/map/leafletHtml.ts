@@ -58,17 +58,23 @@ export function buildLeafletHtml() {
     .leaflet-popup-content { margin: 10px 14px; font: 13px/1.4 system-ui, sans-serif; }
     .lot-name { font-weight: 700; color: #FFFFFF; }
     .lot-meta { color: #D7A49E; }
+    .sighting-dot { background: #FFD46B; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 5px rgba(255,212,107,.2), 0 2px 12px #0009; }
+    .selection-dot { background: #FB503F; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 6px #FB503F44; }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <script>
-    function notifyReady() {
+    function postMessage(message) {
       if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage('${MAP_READY_MESSAGE}');
+        window.ReactNativeWebView.postMessage(typeof message === 'string' ? message : JSON.stringify(message));
       } else if (window.parent !== window) {
-        window.parent.postMessage('${MAP_READY_MESSAGE}', '*');
+        window.parent.postMessage(message, '*');
       }
+    }
+    var notified = false;
+    function notifyReady() {
+      if (!notified) { notified = true; postMessage('${MAP_READY_MESSAGE}'); }
     }
 
     var bounds = L.latLngBounds(${JSON.stringify(BOUNDS)});
@@ -101,20 +107,72 @@ export function buildLeafletHtml() {
       });
     }
 
-    L.geoJSON(${PARKING_LOTS_JSON}, {
+    var selecting = false;
+    var lots = L.geoJSON(${PARKING_LOTS_JSON}, {
       style: function (feature) {
         var color = LOT_COLORS[feature.properties.type] || LOT_COLORS.surface_lot;
         return { color: color, fillColor: color, weight: 1.5, opacity: 0.9, fillOpacity: 0.3 };
       },
       onEachFeature: function (feature, layer) {
         var p = feature.properties;
-        layer.bindPopup(
+        layer.lotPopup =
           '<div class="lot-name">' + escapeText(p.name) + '</div>' +
           '<div class="lot-meta">Lot ' + escapeText(p.lot) + ' · ' +
-          (p.type === 'garage' ? 'Garage' : 'Surface lot') + '</div>'
-        );
+          (p.type === 'garage' ? 'Garage' : 'Surface lot') + '</div>';
+        layer.bindPopup(layer.lotPopup);
       },
     }).addTo(map);
+
+    var sightingsLayer = L.layerGroup().addTo(map);
+    var markers = {};
+    var selection;
+    window.USnitchMap = {
+      update: function (state) {
+        if (!state || state.type !== 'usnitch-state') return;
+        var nextSelecting = Boolean(state.pickingLocation);
+        if (nextSelecting !== selecting) {
+          selecting = nextSelecting;
+          lots.eachLayer(function (layer) {
+            if (selecting) layer.unbindPopup();
+            else layer.bindPopup(layer.lotPopup);
+          });
+          map.closePopup();
+        }
+        var ids = {};
+        (state.sightings || []).slice().sort(function (a, b) {
+          return Date.parse(a.observed_at) - Date.parse(b.observed_at);
+        }).forEach(function (s, index) {
+          if (!Number.isFinite(s.latitude) || !Number.isFinite(s.longitude)) return;
+          ids[s.id] = true;
+          if (!markers[s.id]) {
+            var icon = L.divIcon({className:'sighting-dot',iconSize:[18,18],iconAnchor:[9,9]});
+            markers[s.id] = L.marker([s.latitude,s.longitude], {icon:icon, keyboard:true, title:'Open sighting photo', alt:'Open sighting photo'})
+              .bindTooltip('Sighting · ' + new Date(s.observed_at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}))
+              .on('click', function () { if (!selecting) postMessage({type:'sighting-selected',id:s.id}); })
+              .addTo(sightingsLayer);
+          }
+          markers[s.id].setZIndexOffset(index * 20);
+        });
+        Object.keys(markers).forEach(function (id) {
+          if (!ids[id]) { sightingsLayer.removeLayer(markers[id]); delete markers[id]; }
+        });
+        if (state.selectedLocation) {
+          var point = [state.selectedLocation.latitude,state.selectedLocation.longitude];
+          if (!selection || !selection.getLatLng().equals(point)) map.panTo(point, {animate:false});
+          if (!selection) {
+            selection = L.marker(point,{icon:L.divIcon({className:'selection-dot',iconSize:[20,20],iconAnchor:[10,10]})}).addTo(map);
+          } else selection.setLatLng(point);
+        } else if (selection) { map.removeLayer(selection); selection = null; }
+      }
+    };
+    window.addEventListener('message', function (event) {
+      if (event.source === window.parent) window.USnitchMap.update(event.data);
+    });
+    map.on('click', function (event) {
+      if (selecting) postMessage({type:'location-selected',latitude:event.latlng.lat,longitude:event.latlng.lng});
+    });
+    // The bridge is ready independently of the tile network.
+    setTimeout(notifyReady, 600);
   </script>
 </body>
 </html>`;

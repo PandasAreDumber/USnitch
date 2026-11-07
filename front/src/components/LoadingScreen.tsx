@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, Easing, Platform, Text, View } from 'react-native';
 
 const DOT_COLORS = ['bg-rose', 'bg-ogre', 'bg-geranium'];
 
 // Full-screen splash shown while the app (and the map) loads.
 export default function LoadingScreen() {
-  const pulse = useRef(new Animated.Value(0)).current;
+  const [pulse] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -13,7 +13,7 @@ export default function LoadingScreen() {
         toValue: 1,
         duration: 1200,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
     );
     loop.start();
