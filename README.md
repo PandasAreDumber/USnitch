@@ -5,17 +5,22 @@ in [data/parking](data/parking/README.md).
 
 Mobile app built with Expo (React Native), styled with Tailwind via NativeWind and daisyUI theme colors.
 
+The app uses Supabase for email/password accounts, private sighting photos, and
+shared live map reports. See [app setup and feature documentation](front/README.md).
+
 ## Project layout
 
 - `front/` — the Expo mobile app
-- `server/` — backend (not started yet)
+- `server/` — optional FastAPI backend for future prediction work
+- `supabase/` — database migrations, storage policies, and local configuration
 
 ## Getting started
 
 ```bash
 cd front
-npm install
-npx expo start
+npm ci
+# Configure .env.local using .env.example if this is a fresh checkout.
+npm start
 ```
 
 Scan the QR code with the Expo Go app (Android) or the Camera app (iOS).
