@@ -43,7 +43,6 @@ export default function SightingPhoto({ sighting, onClose }: { sighting: Sightin
               <Text style={styles.label}>Location</Text>
               <Text style={styles.text}>{sighting.latitude.toFixed(5)}, {sighting.longitude.toFixed(5)}</Text>
               {sighting.note ? <><Text style={styles.label}>Details</Text><Text style={styles.text}>{sighting.note}</Text></> : null}
-              <Text style={styles.caption}>A community report of where enforcement was seen at that time.</Text>
               <Pressable accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
                 <Text style={styles.closeText}>Close</Text>
               </Pressable>

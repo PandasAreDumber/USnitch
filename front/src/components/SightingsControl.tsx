@@ -29,7 +29,6 @@ export default function SightingsControl({ count, loading, live, timeWindow, onT
             <Text accessibilityLiveRegion="polite" style={styles.count}>
               {loading ? 'Loading sightings…' : `${count} sighting${count === 1 ? '' : 's'}`}
             </Text>
-            <Text style={styles.live}>{live ? 'Live' : 'Syncing'}</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Sighting time period: ${selected.label}`}
